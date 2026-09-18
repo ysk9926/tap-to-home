@@ -13,6 +13,8 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 
 ## Vercel 프로젝트
 
+프로젝트 이름 `tap-to-home-web`, production 도메인 `https://tap-to-home-web.vercel.app`. 환경 변수는 `app/web` 에서 `npx vercel link --project tap-to-home-web` 후 `vercel env add <NAME> <production|preview>` 로 넣는다(비밀값은 `--sensitive`).
+
 | 설정 | 값 |
 | --- | --- |
 | Framework Preset | Next.js |

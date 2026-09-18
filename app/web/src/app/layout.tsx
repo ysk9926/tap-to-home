@@ -1,6 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { Gaegu, Nanum_Pen_Script } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { SketchDefs } from "@/components/sketch-defs";
+
+// 제목·본문·버튼. 뭉툭한 매직 글씨 느낌
+const gaegu = Gaegu({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-gaegu",
+  display: "swap",
+});
+
+// 말풍선·메모·힌트. 얇은 펜 글씨
+const nanumPen = Nanum_Pen_Script({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-nanum-pen",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Tap to Home",
@@ -17,8 +35,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+    <html
+      lang="ko"
+      className={`h-full antialiased ${gaegu.variable} ${nanumPen.variable}`}
+    >
+      <body className="min-h-full flex flex-col bg-paper">
+        <SketchDefs />
         <Providers>{children}</Providers>
       </body>
     </html>

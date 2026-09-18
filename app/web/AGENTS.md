@@ -36,4 +36,5 @@ src/lib/supabase/        Realtime 전용. client.ts(publishable, 브라우저 �
 - 도메인 모델은 `prisma/schema.prisma` 에 `// ── <domain>` 구역으로 나눠 둔다. better-auth 모델(User/Session/Account/Verification)의 필드명은 better-auth 계약이므로 바꾸지 않는다.
 - 쿼리는 `import { prisma } from "@/lib/db"`. 생성 클라이언트 경로(`@/generated/prisma/client`)는 타입 import 에만 쓴다.
 - 버튼 연타가 핵심 인터랙션이므로 탭 핸들러는 낙관적 업데이트로 즉시 반응하고 서버 동기화는 배치한다 (`docs/decisions/0002-realtime.md`).
-- 스타일은 Tailwind v4 + `globals.css` 의 테마 토큰. 임의 색상 값 대신 토큰(`bg-background`, `text-pencil`)을 쓴다.
+- 스타일은 Tailwind v4 + `globals.css` 의 테마 토큰. 임의 색상 값 대신 토큰(`bg-paper`, `text-pencil`, `border-marker`)을 쓴다.
+- UI 를 만들기 전에 `docs/design.md` 를 읽고 `src/components/` 의 프리미티브(MarkerBox, MarkerButton, TapButton, Stickman 등)를 쓴다. 새 프리미티브는 `/dev/ui` (개발 전용) 에 상태별로 올린다.

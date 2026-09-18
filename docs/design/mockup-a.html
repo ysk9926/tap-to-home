@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tap to Home 시안 A</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Pen+Script&display=swap">
+<style>
+  :root {
+    --paper: #fffdf5;
+    --paper-2: #fbf7e8;
+    --ink: #2b2b2b;
+    --line: #c9d6ea;
+    --margin: #f4a3a3;
+    --pencil: #3a3a3a;
+    --pencil-soft: #8a8a86;
+    --marker: #1f1f1f;
+    --hilite: #fff3a3;
+    --hilite-2: #ffe86b;
+    --paper-shadow: rgba(60, 50, 20, .18);
+    --ruled: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--line) 31px, var(--line) 32px);
+    --font-ui: "Gaegu", "Nanum Pen Script", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --font-note: "Nanum Pen Script", "Gaegu", "Apple SD Gothic Neo", cursive;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper-2);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 18px;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+  }
+  .board { max-width: 1320px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ---------- board header ---------- */
+  .board-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 32px; margin-bottom: 28px; }
+  .board-head h1 { font-size: 40px; font-weight: 700; margin: 0; letter-spacing: -.01em; line-height: 1; }
+  .board-head h1 small { font-family: var(--font-note); font-weight: 400; font-size: 24px; color: var(--pencil-soft); margin-left: 10px; }
+  .legend { display: flex; gap: 20px; font-family: var(--font-note); font-size: 20px; color: var(--pencil); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { display: inline-block; width: 36px; height: 0; border-top: 3px solid var(--marker); border-radius: 2px; }
+  .legend i.thin { border-top-width: 1.5px; border-color: var(--pencil); }
+
+  /* ---------- phone frames ---------- */
+  .screens { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; }
+  .phone { width: 372px; flex: 0 0 372px; }
+  .phone .caption { font-family: var(--font-note); font-size: 22px; color: var(--pencil); margin: 0 0 8px 6px; }
+  .phone .caption b { font-family: var(--font-ui); font-weight: 700; color: var(--ink); font-size: 20px; margin-right: 6px; }
+  .frame {
+    position: relative; height: 760px; overflow: hidden;
+    background: var(--paper) var(--ruled);
+    background-position: 0 6px;
+    border: 3.5px solid var(--marker);
+    border-radius: 34px 30px 36px 32px / 32px 36px 30px 34px;
+    box-shadow: 4px 6px 0 var(--paper-shadow);
+    filter: url(#wobble);
+  }
+  .frame::before { /* red margin line */
+    content: ""; position: absolute; top: 0; bottom: 0; left: 34px; width: 0; border-left: 1.5px solid var(--margin); opacity: .9; pointer-events: none;
+  }
+  .status { display: flex; justify-content: space-between; padding: 12px 24px 0; font-size: 15px; font-weight: 700; }
+  .status .notch { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); width: 110px; height: 22px; border: 3px solid var(--marker); border-top: 0; border-radius: 0 0 16px 16px; }
+  .inner { position: absolute; inset: 44px 0 0 0; padding: 12px 22px 22px 46px; display: flex; flex-direction: column; }
+
+  /* marker-drawn UI atoms */
+  .mk { border: 3px solid var(--marker); border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; background: var(--paper); }
+  .mk-pill { border: 3px solid var(--marker); border-radius: 999px; background: var(--paper); }
+  .hl { background: linear-gradient(transparent 40%, var(--hilite) 40%, var(--hilite) 92%, transparent 92%); padding: 0 3px; }
+  .note { font-family: var(--font-note); color: var(--pencil); }
+
+  h2.screen-title { font-size: 26px; font-weight: 700; margin: 0; line-height: 1.1; text-wrap: balance; }
+  .sub { font-family: var(--font-note); font-size: 20px; color: var(--pencil-soft); margin-top: 2px; }
+
+  /* ----- main screen ----- */
+  .count-row { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+  .count { font-size: 88px; font-weight: 700; line-height: .9; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .count-unit { font-size: 26px; font-weight: 700; }
+  .stage-strip { position: relative; margin-top: 18px; height: 78px; }
+  .stage-strip .rail { position: absolute; left: 0; right: 0; bottom: 20px; border-top: 1.5px solid var(--pencil); }
+  .stage-strip .tick { position: absolute; bottom: 12px; transform: translateX(-50%); font-family: var(--font-note); font-size: 15px; color: var(--pencil-soft); white-space: nowrap; }
+  .stage-strip .tick::before { content: ""; display: block; margin: 0 auto 2px; width: 0; height: 10px; border-left: 1.5px solid var(--pencil); }
+  .stage-strip .tick.done { color: var(--pencil); }
+  .stage-strip .house { position: absolute; right: -6px; bottom: 22px; }
+  .stage-strip .me { position: absolute; bottom: 21px; transform: translateX(-50%); transition: left .25s steps(3); }
+  .stage-strip .me .name { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); font-family: var(--font-note); font-size: 16px; white-space: nowrap; }
+
+  .tap-wrap { display: flex; flex-direction: column; align-items: center; margin-top: 22px; }
+  .tap {
+    position: relative; width: 224px; height: 224px; cursor: pointer; border: 0; background: transparent; padding: 0;
+    font-family: var(--font-ui); font-weight: 700; font-size: 34px; line-height: 1.05; color: var(--ink);
+    transition: transform .08s steps(2);
+  }
+  .tap svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tap span { position: relative; display: block; text-wrap: balance; }
+  .tap:active, .tap.pressed { transform: scale(.94) rotate(-1.5deg); }
+  .tap:focus-visible { outline: 3px dashed var(--pencil); outline-offset: 6px; border-radius: 50%; }
+  .tap-hint { font-family: var(--font-note); font-size: 19px; color: var(--pencil-soft); margin-top: 8px; }
+  .burst { position: absolute; font-family: var(--font-note); font-size: 22px; color: var(--pencil); pointer-events: none; animation: rise .6s steps(4) forwards; }
+  @keyframes rise { from { transform: translateY(0); opacity: 1 } to { transform: translateY(-46px); opacity: 0 } }
+
+  .room { margin-top: auto; padding: 10px 14px 12px; }
+  .room .room-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; font-size: 19px; }
+  .room .room-head .note { font-size: 17px; }
+  .friends { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+  .friend { text-align: center; font-size: 15px; line-height: 1.15; }
+  .friend .fig { height: 46px; display: flex; align-items: flex-end; justify-content: center; }
+  .friend b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .friend.more { color: var(--pencil-soft); align-self: end; padding-bottom: 6px; }
+
+  /* ----- race screen ----- */
+  .race-head { display: flex; justify-content: space-between; align-items: flex-end; }
+  .race-head .live { font-family: var(--font-note); font-size: 17px; color: var(--pencil); display: inline-flex; align-items: center; gap: 6px; }
+  .race-head .live i { width: 9px; height: 9px; border-radius: 50%; background: var(--marker); animation: blink 1.2s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .15 } }
+  .stages { position: relative; height: 26px; margin: 10px 0 2px; }
+  .stages .st { position: absolute; transform: translateX(-50%); font-family: var(--font-note); font-size: 14px; color: var(--pencil-soft); white-space: nowrap; }
+  .stages .st:first-child { transform: none; }
+  .stages .st:last-child { transform: translateX(-100%); }
+  .lanes { position: relative; }
+  .lane { position: relative; height: 64px; display: grid; grid-template-columns: 74px 1fr 28px; align-items: end; }
+  .lane .who { padding-bottom: 6px; line-height: 1; }
+  .lane .who .rank { font-family: var(--font-note); font-size: 14px; color: var(--pencil-soft); }
+  .lane .who .nm { font-weight: 700; font-size: 18px; }
+  .lane .who .ct { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--pencil); }
+  .lane .track { position: relative; height: 64px; }
+  .lane .track .dash { position: absolute; left: 0; right: 0; bottom: 5px; border-top: 1.5px dashed var(--pencil-soft); opacity: .55; }
+  .lane .track .runner { position: absolute; bottom: 6px; transform: translateX(-50%); transition: left .3s steps(3); }
+  .lane .track .bubble { position: absolute; bottom: 60px; transform: translateX(-30%); white-space: nowrap; font-family: var(--font-note); font-size: 16px; padding: 1px 9px; border: 1.5px solid var(--pencil); border-radius: 12px 14px 12px 14px / 14px 12px 14px 12px; background: var(--paper); }
+  .lane .track .bubble::after { content: ""; position: absolute; left: 22px; bottom: -8px; width: 8px; height: 8px; background: var(--paper); border-right: 1.5px solid var(--pencil); border-bottom: 1.5px solid var(--pencil); transform: rotate(45deg); }
+  .lane .goal { padding-bottom: 4px; }
+  .lane.me .who .nm { background: linear-gradient(transparent 45%, var(--hilite) 45%, var(--hilite) 95%, transparent 95%); }
+
+  .toast { margin-top: auto; display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--hilite); border-radius: 12px 18px 14px 16px / 16px 12px 18px 14px; }
+  .toast .txt { font-size: 18px; line-height: 1.2; }
+  .toast .txt b { font-weight: 700; }
+  .toast .txt .note { font-size: 16px; display: block; }
+  .toast .bell { flex: 0 0 auto; }
+
+  /* ----- result screen ----- */
+  .title-card { margin-top: 12px; padding: 14px 16px 12px; text-align: center; }
+  .title-card .eyebrow { font-family: var(--font-note); font-size: 18px; color: var(--pencil-soft); }
+  .title-card .title { font-size: 30px; font-weight: 700; line-height: 1.1; margin: 4px 0 8px; text-wrap: balance; }
+  .title-card .title .hl { padding: 0 6px; }
+  .title-card .pose { height: 84px; display: flex; align-items: flex-end; justify-content: center; }
+  .stats { margin-top: 10px; display: grid; grid-template-columns: 1fr auto; row-gap: 2px; font-size: 18px; }
+  .stats dt { color: var(--pencil); }
+  .stats dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .dex { margin-top: 16px; }
+  .dex-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; font-size: 20px; }
+  .dex-head .cnt { font-variant-numeric: tabular-nums; }
+  .dex-head .cnt small { font-weight: 400; color: var(--pencil-soft); font-size: 15px; }
+  .dex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .badge { position: relative; aspect-ratio: 1 / 1.05; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 4px; font-size: 13px; line-height: 1.1; text-align: center; }
+  .badge.locked { color: var(--pencil-soft); border-style: dashed; background: transparent; }
+  .badge.locked .sil { opacity: .25; }
+  .badge .new { position: absolute; top: -9px; right: -8px; transform: rotate(8deg); font-family: var(--font-note); font-size: 14px; background: var(--hilite-2); border: 1.5px solid var(--marker); border-radius: 999px; padding: 0 7px; }
+  .cta-row { margin-top: auto; display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 10px 8px; text-align: center; font-family: var(--font-ui); font-weight: 700; font-size: 20px; color: var(--ink); cursor: pointer; }
+  .btn.ghost { background: transparent; }
+
+  /* ---------- sticker sheet ---------- */
+  .sheet { margin-top: 48px; padding: 28px 28px 32px; background: var(--paper) var(--ruled); border: 3px solid var(--marker); border-radius: 22px 18px 24px 20px / 18px 24px 20px 22px; box-shadow: 4px 6px 0 var(--paper-shadow); position: relative; }
+  .sheet::before { content: ""; position: absolute; top: 0; bottom: 0; left: 40px; border-left: 1.5px solid var(--margin); }
+  .sheet h2 { margin: 0 0 4px 30px; font-size: 28px; }
+  .sheet .lead { margin: 0 0 18px 30px; font-family: var(--font-note); font-size: 20px; color: var(--pencil); max-width: 62ch; }
+  .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px 28px; margin-left: 30px; }
+  .cell h3 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
+  .cell h3 small { font-family: var(--font-note); font-weight: 400; color: var(--pencil-soft); font-size: 17px; margin-left: 6px; }
+  .poses { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .pose-item { text-align: center; font-family: var(--font-note); font-size: 17px; color: var(--pencil); }
+  .pose-item .fig { height: 76px; display: flex; align-items: flex-end; justify-content: center; }
+  .pose-item .thr { display: block; font-size: 14px; color: var(--pencil-soft); }
+  .states { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .mini-tap { width: 96px; height: 96px; position: relative; font-family: var(--font-ui); font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.05; }
+  .mini-tap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mini-tap span { position: relative; }
+  .mini-tap.pressed { transform: scale(.94) rotate(-1.5deg); }
+  .mini-tap.pressed svg path { stroke-width: 4.5; }
+  .state-lbl { font-family: var(--font-note); font-size: 16px; color: var(--pencil-soft); text-align: center; margin-top: 4px; }
+  .signals { display: grid; gap: 8px; }
+  .signal { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 10px; font-size: 17px; }
+  .signal .k { font-family: var(--font-note); font-size: 18px; color: var(--pencil); text-align: right; }
+  .signal .v { padding: 5px 12px; background: var(--paper); }
+  .signal.hot .v { background: var(--hilite); }
+  .tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .tok { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .tok i { width: 30px; height: 30px; border: 2px solid var(--marker); border-radius: 8px 10px 8px 12px / 10px 8px 12px 8px; }
+  .tok code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: var(--pencil-soft); display: block; }
+  .type-samples > div { margin-bottom: 4px; }
+  .type-samples .d { font-weight: 700; font-size: 30px; line-height: 1; }
+  .type-samples .b { font-size: 18px; }
+  .type-samples .n { font-family: var(--font-note); font-size: 22px; color: var(--pencil); }
+  .type-samples small { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--pencil-soft); margin-left: 8px; }
+
+  .figure { display: inline-block; vertical-align: bottom; }
+  .figure svg { display: block; overflow: visible; }
+  .figure path, .figure circle, .figure line { fill: none; stroke: var(--pencil); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .figure.thick path, .figure.thick circle, .figure.thick line { stroke-width: 2.2; }
+  .figure .f2 { display: none; }
+  .figure.step .f1 { display: none; }
+  .figure.step .f2 { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .race-head .live i { animation: none; }
+    .burst { animation: none; display: none; }
+    * { transition: none !important; }
+  }
+  @media (max-width: 420px) {
+    .board { padding: 20px 12px 48px; }
+    .phone { width: 100%; flex-basis: 100%; }
+    .frame { height: 740px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wobble" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <symbol id="house" viewBox="0 0 28 26">
+    <path d="M3 12 L14 3 L25 12 M6 11 V23 H22 V11 M12 23 V16 H17 V23" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="bell" viewBox="0 0 28 28">
+    <path d="M8 19 C8 10 9 7 14 6 C19 7 20 10 20 19 L23 22 H5 Z M12 24 C12 26 16 26 16 24 M14 3 V6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M23 6 L25 4 M24 11 H27 M4 6 L2 4 M4 11 H1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="crown" viewBox="0 0 28 22">
+    <path d="M3 18 L3 7 L9 12 L14 4 L19 12 L25 7 L25 18 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<main class="board">
+  <header class="board-head">
+    <h1>Tap to Home <small>시안 A · 줄노트 + 혼합 선</small></h1>
+    <div class="legend">
+      <span><i></i>UI 프레임 · 매직 3px</span>
+      <span><i class="thin"></i>졸라맨 · 연필 1.7px</span>
+      <span><i style="border-color:var(--hilite-2);border-top-width:10px;opacity:.9"></i>형광펜 · 강조 하나</span>
+    </div>
+  </header>
+
+  <section class="screens">
+
+    <!-- ============ 1. 메인 ============ -->
+    <article class="phone">
+      <p class="caption"><b>① 메인</b>F1-1 · 연타하면 졸라맨이 전진</p>
+      <div class="frame">
+        <div class="status"><span>9:41</span><i class="notch"></i><span>ıll ▮</span></div>
+        <div class="inner" id="main-inner">
+          <h2 class="screen-title">오늘 퇴근하고 싶은 횟수</h2>
+          <div class="sub">9월 19일 금요일 · 아직 회사</div>
+          <div class="count-row"><div class="count" id="count">23</div><div class="count-unit">번</div></div>
+
+          <div class="stage-strip" id="strip">
+            <div class="rail"></div>
+            <div class="tick done" style="left:0%">자리</div>
+            <div class="tick done" style="left:10%">엘베</div>
+            <div class="tick" style="left:25%">로비</div>
+            <div class="tick" style="left:45%">횡단보도</div>
+            <div class="tick" style="left:70%">지하철</div>
+            <div class="tick" style="left:100%">집</div>
+            <svg class="house" width="26" height="24" style="color:var(--marker)"><use href="#house"/></svg>
+            <div class="me" id="me" style="left:23%"><div class="name">나</div><span class="figure" data-pose="walk"></span></div>
+          </div>
+
+          <div class="tap-wrap">
+            <button class="tap" id="tap" aria-label="퇴근하고 싶다, 누르면 횟수 1 증가">
+              <svg class="ring" viewBox="0 0 224 224" aria-hidden="true">
+                <path d="M112 14 C170 10 214 52 212 112 C210 172 166 212 110 212 C50 212 12 168 14 110 C16 50 56 18 112 14 Z" fill="var(--paper)" stroke="var(--marker)" stroke-width="4" stroke-linecap="round"/>
+                <path d="M112 22 C160 20 204 58 204 112 C204 164 162 204 112 204" fill="none" stroke="var(--marker)" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+              </svg>
+              <span>퇴근하고<br>싶다!</span>
+            </button>
+            <div class="tap-hint">꾹꾹 누르면 한 칸씩 간다</div>
+          </div>
+
+          <div class="room mk">
+            <div class="room-head"><span>우리 방</span><span class="note">오늘 4명 접속 →</span></div>
+            <div class="friends">
+              <div class="friend"><div class="fig"><span class="figure" data-pose="home"></span></div>민경<b>73</b></div>
+              <div class="friend"><div class="fig"><span class="figure" data-pose="subway"></span></div>수현<b>52</b></div>
+              <div class="friend"><div class="fig"><span class="figure" data-pose="sit"></span></div>지영<b>9</b></div>
+              <div class="friend more">+ 더보기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============ 2. 친구 레이스 ============ -->
+    <article class="phone">
+      <p class="caption"><b>② 친구 레이스</b>F1-2 + F2 · 노트 줄이 곧 트랙</p>
+      <div class="frame">
+        <div class="status"><span>9:41</span><i class="notch"></i><span>ıll ▮</span></div>
+        <div class="inner">
+          <div class="race-head">
+            <div>
+              <h2 class="screen-title">오늘의 퇴근 레이스</h2>
+              <div class="sub">누가 먼저 집에 갈까</div>
+            </div>
+            <span class="live"><i></i>실시간</span>
+          </div>
+
+          <div class="stages">
+            <span class="st" style="left:0">회사</span>
+            <span class="st" style="left:10%">엘베</span>
+            <span class="st" style="left:25%">로비</span>
+            <span class="st" style="left:45%">횡단보도</span>
+            <span class="st" style="left:70%">지하철</span>
+            <span class="st" style="left:100%">집</span>
+          </div>
+
+          <div class="lanes">
+            <div class="lane">
+              <div class="who"><div class="rank">1위 <svg width="14" height="11" style="color:var(--marker);vertical-align:-1px"><use href="#crown"/></svg></div><div class="nm">민경</div><div class="ct">73번 · 지하철</div></div>
+              <div class="track"><div class="dash"></div><div class="bubble" style="left:73%">거의 다 왔어!</div><div class="runner" style="left:73%"><span class="figure" data-pose="subway"></span></div></div>
+              <svg class="goal" width="24" height="22" style="color:var(--marker)"><use href="#house"/></svg>
+            </div>
+            <div class="lane">
+              <div class="who"><div class="rank">2위</div><div class="nm">수현</div><div class="ct">52번 · 횡단보도</div></div>
+              <div class="track"><div class="dash"></div><div class="runner" style="left:52%"><span class="figure" data-pose="run"></span></div></div>
+              <svg class="goal" width="24" height="22" style="color:var(--marker)"><use href="#house"/></svg>
+            </div>
+            <div class="lane me">
+              <div class="who"><div class="rank">3위</div><div class="nm">나</div><div class="ct"><span id="ct-me">23</span>번 · 로비</div></div>
+              <div class="track"><div class="dash"></div><div class="runner" id="runner-me" style="left:23%"><span class="figure" data-pose="walk"></span></div></div>
+              <svg class="goal" width="24" height="22" style="color:var(--marker)"><use href="#house"/></svg>
+            </div>
+            <div class="lane">
+              <div class="who"><div class="rank">4위</div><div class="nm">지영</div><div class="ct">9번 · 자리</div></div>
+              <div class="track"><div class="dash"></div><div class="bubble" style="left:9%">아직 멀어…</div><div class="runner" style="left:9%"><span class="figure" data-pose="sit"></span></div></div>
+              <svg class="goal" width="24" height="22" style="color:var(--marker)"><use href="#house"/></svg>
+            </div>
+            <div class="lane">
+              <div class="who"><div class="rank">5위</div><div class="nm">도윤</div><div class="ct">0번 · 아직 안 옴</div></div>
+              <div class="track"><div class="dash"></div><div class="runner" style="left:1%"><span class="figure" data-pose="stand" style="opacity:.35"></span></div></div>
+              <svg class="goal" width="24" height="22" style="color:var(--marker)"><use href="#house"/></svg>
+            </div>
+          </div>
+
+          <div class="toast" role="status">
+            <svg class="bell" width="30" height="30" style="color:var(--marker)"><use href="#bell"/></svg>
+            <div class="txt"><b>민경</b>이 긴급 퇴근 신호를 보냈어요!<span class="note">10연타 · 방금</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============ 3. 오늘의 결과 ============ -->
+    <article class="phone">
+      <p class="caption"><b>③ 오늘의 결과</b>F3 · 칭호와 도감</p>
+      <div class="frame">
+        <div class="status"><span>23:59</span><i class="notch"></i><span>ıll ▮</span></div>
+        <div class="inner">
+          <h2 class="screen-title">오늘도 수고했어요</h2>
+          <div class="sub">9월 19일 금요일 · 정산 완료</div>
+
+          <div class="title-card mk">
+            <div class="eyebrow">오늘의 대표 칭호</div>
+            <div class="title"><span class="hl">마음만 이미 집에 있음</span></div>
+            <div class="pose"><span class="figure thick" data-pose="lie"></span></div>
+            <dl class="stats">
+              <dt>총 횟수</dt><dd>103번</dd>
+              <dt>첫 퇴근 욕구</dt><dd>09:32</dd>
+              <dt>가장 많이 누른 시간</dt><dd>16:20 – 17:00</dd>
+              <dt>오늘 랭킹</dt><dd>2위 / 5명</dd>
+            </dl>
+          </div>
+
+          <div class="dex">
+            <div class="dex-head"><span>퇴근 도감</span><span class="cnt">14<small> / 50</small></span></div>
+            <div class="dex-grid">
+              <div class="badge mk"><span class="new">NEW</span><span class="figure" data-pose="lie" data-size="28"></span>마음만 이미<br>집에 있음</div>
+              <div class="badge mk"><span class="figure" data-pose="run" data-size="28"></span>퇴근 1시간 전<br>폭주형</div>
+              <div class="badge mk"><span class="figure" data-pose="sit" data-size="28"></span>점심 먹고 모든<br>의욕을 잃은 자</div>
+              <div class="badge mk"><span class="figure" data-pose="home" data-size="28"></span>출근하자마자<br>집 가고 싶었던 자</div>
+              <div class="badge mk locked"><span class="figure sil" data-pose="stand" data-size="28"></span>? ? ?<br><span class="note" style="font-size:12px">10번 미만인 날</span></div>
+              <div class="badge mk locked"><span class="figure sil" data-pose="subway" data-size="28"></span>? ? ?<br><span class="note" style="font-size:12px">힌트: 지하철</span></div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <button class="btn mk-pill">도감 전체 보기</button>
+            <button class="btn mk-pill ghost">공유</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 스티커 시트 ============ -->
+  <section class="sheet">
+    <h2>스티커 시트</h2>
+    <p class="lead">졸라맨은 연필 1.7px 한 종류. 프레임·버튼·집 아이콘은 매직 3px. 강조색은 형광펜 노랑 하나만 쓰고, 나머지는 전부 종이·연필·매직 3톤으로 버틴다.</p>
+    <div class="sheet-grid">
+      <div class="cell" style="grid-column: 1 / -1">
+        <h3>졸라맨 6단계 <small>F1-1 임계값 · 탭하면 2프레임 스톱모션</small></h3>
+        <div class="poses">
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="sit" data-size="56"></span></div>자리<span class="thr">0</span></div>
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="stand" data-size="56"></span></div>엘리베이터<span class="thr">10</span></div>
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="walk" data-size="56"></span></div>로비<span class="thr">25</span></div>
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="run" data-size="56"></span></div>횡단보도<span class="thr">45</span></div>
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="subway" data-size="56"></span></div>지하철<span class="thr">70</span></div>
+          <div class="pose-item"><div class="fig"><span class="figure" data-pose="home" data-size="56"></span></div>집<span class="thr">100</span></div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <h3>버튼 상태</h3>
+        <div class="states">
+          <div><div class="mini-tap"><svg viewBox="0 0 96 96"><path d="M48 6 C74 4 92 22 91 48 C90 74 72 91 47 91 C22 91 5 72 6 47 C7 22 24 8 48 6 Z" fill="var(--paper)" stroke="var(--marker)" stroke-width="3.2"/></svg><span>기본</span></div><div class="state-lbl">at rest</div></div>
+          <div><div class="mini-tap pressed"><svg viewBox="0 0 96 96"><path d="M48 8 C72 6 90 24 89 48 C88 72 70 89 47 89 C24 89 7 70 8 47 C9 24 26 10 48 8 Z" fill="var(--hilite)" stroke="var(--marker)" stroke-width="3.2"/></svg><span>눌림</span></div><div class="state-lbl">찌그러짐 + 형광펜</div></div>
+          <div><div class="mini-tap"><svg viewBox="0 0 96 96"><path d="M48 6 C74 4 92 22 91 48 C90 74 72 91 47 91 C22 91 5 72 6 47 C7 22 24 8 48 6 Z" fill="var(--paper)" stroke="var(--pencil-soft)" stroke-width="2" stroke-dasharray="5 4"/></svg><span style="color:var(--pencil-soft)">정산 후</span></div><div class="state-lbl">오늘 끝, 점선</div></div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <h3>퇴근 신호 토스트 <small>F2 연타 등급</small></h3>
+        <div class="signals">
+          <div class="signal"><span class="k">1회</span><span class="v mk">수현이도 퇴근하고 싶어 해요</span></div>
+          <div class="signal"><span class="k">5회</span><span class="v mk">수현이 <b>강하게</b> 퇴근하고 싶어 해요</span></div>
+          <div class="signal hot"><span class="k">10회</span><span class="v mk">민경이 <b>긴급 퇴근 신호</b>를 보냈어요!</span></div>
+          <div class="signal hot"><span class="k">30회</span><span class="v mk">민경이 <b>구조 요청</b>을 보냈어요!!</span></div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <h3>토큰</h3>
+        <div class="tokens">
+          <div class="tok"><i style="background:var(--paper)"></i><span>종이<code>#fffdf5</code></span></div>
+          <div class="tok"><i style="background:var(--line)"></i><span>가로줄<code>#c9d6ea</code></span></div>
+          <div class="tok"><i style="background:var(--margin)"></i><span>여백선<code>#f4a3a3</code></span></div>
+          <div class="tok"><i style="background:var(--pencil)"></i><span>연필<code>#3a3a3a</code></span></div>
+          <div class="tok"><i style="background:var(--marker)"></i><span>매직<code>#1f1f1f</code></span></div>
+          <div class="tok"><i style="background:var(--hilite)"></i><span>형광펜<code>#fff3a3</code></span></div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <h3>타이포</h3>
+        <div class="type-samples">
+          <div class="d">퇴근하고 싶다!<small>Gaegu 700 · 제목·버튼</small></div>
+          <div class="b">오늘 퇴근하고 싶은 횟수 23번<small>Gaegu 400 · 본문·수치</small></div>
+          <div class="n">거의 다 왔어! 아직 멀어…<small>Nanum Pen Script · 말풍선·메모</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // 졸라맨: 40x60 박스, 연필 선. f1/f2 = 걷기 2프레임.
+  const POSES = {
+    sit: {
+      f1: 'M20 18 L17 34 M17 34 L29 34 M29 34 L29 48 M19 26 L31 29 M10 48 H36 M13 48 V56 M33 48 V56 M27 22 L38 22 L36 30 L26 30 Z',
+      f2: 'M20 18 L17 34 M17 34 L29 34 M29 34 L29 48 M19 26 L32 27 M10 48 H36 M13 48 V56 M33 48 V56 M27 22 L38 22 L36 30 L26 30 Z',
+      head: [20, 11]
+    },
+    stand: {
+      f1: 'M20 18 V38 M20 38 L15 56 M20 38 L25 56 M20 25 L12 35 M20 25 L28 35',
+      f2: 'M20 18 V38 M20 38 L15 56 M20 38 L25 56 M20 25 L11 33 M20 25 L28 36',
+      head: [20, 11]
+    },
+    walk: {
+      f1: 'M20 18 L21 38 M21 38 L12 55 M21 38 L30 53 M20 25 L11 31 M20 25 L30 21',
+      f2: 'M20 18 L21 38 M21 38 L18 56 M21 38 L26 56 M20 25 L13 33 M20 25 L28 32',
+      head: [20, 11]
+    },
+    run: {
+      f1: 'M23 18 L18 36 M18 36 L5 47 M18 36 L32 44 L30 54 M21 25 L32 16 M21 25 L9 29 M1 20 H7 M0 27 H5',
+      f2: 'M23 18 L18 36 M18 36 L11 52 M18 36 L30 42 M21 25 L30 34 M21 25 L10 18 M1 20 H7 M0 27 H5',
+      head: [24, 11]
+    },
+    subway: {
+      f1: 'M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L28 10 M28 10 V0 M20 25 L14 35',
+      f2: 'M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L29 9 M29 9 V0 M20 25 L13 34',
+      head: [20, 11]
+    },
+    home: {
+      f1: 'M20 18 V38 M20 38 L13 56 M20 38 L27 56 M20 25 L9 11 M20 25 L31 11 M6 4 L8 8 M34 4 L32 8',
+      f2: 'M20 18 V38 M20 38 L13 56 M20 38 L27 56 M20 25 L10 9 M20 25 L30 9 M6 4 L8 8 M34 4 L32 8',
+      head: [20, 11]
+    },
+    lie: {
+      f1: 'M14 48 L36 48 M36 48 L52 50 M36 48 L50 44 M18 44 L26 40 M18 50 L12 54 M6 40 C4 36 10 34 12 38 M4 36 L2 32',
+      f2: 'M14 48 L36 48 M36 48 L52 50 M36 48 L50 44 M18 44 L26 41 M18 50 L12 54 M6 40 C4 36 10 34 12 38 M4 36 L2 32',
+      head: [12, 47], wide: true
+    }
+  };
+  function face(cx, cy) {
+    return `<circle cx="${cx}" cy="${cy}" r="7"/><path d="M${cx-3} ${cy-1} v2 M${cx+3} ${cy-1} v2"/>`;
+  }
+  document.querySelectorAll('.figure').forEach(el => {
+    const p = POSES[el.dataset.pose] || POSES.stand;
+    const h = Number(el.dataset.size || 44);
+    const w = p.wide ? h * (56 / 60) * 1.4 : h * (40 / 60);
+    const vb = p.wide ? '0 28 56 30' : '0 0 40 60';
+    const vh = p.wide ? h * 0.55 : h;
+    el.innerHTML = `<svg width="${w}" height="${vh}" viewBox="${vb}" aria-hidden="true">${face(...p.head)}<path class="f1" d="${p.f1}"/><path class="f2" d="${p.f2}"/></svg>`;
+  });
+
+  // 메인 탭: 카운트 +1, 졸라맨 전진, 2프레임 걷기 토글.
+  const STAGES = [[0,'자리','sit'],[10,'엘베','stand'],[25,'로비','walk'],[45,'횡단보도','run'],[70,'지하철','subway'],[100,'집','home']];
+  let count = 23;
+  const countEl = document.getElementById('count');
+  const me = document.getElementById('me');
+  const runnerMe = document.getElementById('runner-me');
+  const ctMe = document.getElementById('ct-me');
+  const tap = document.getElementById('tap');
+  const strip = document.getElementById('strip');
+  function stageOf(n) { let s = STAGES[0]; for (const st of STAGES) if (n >= st[0]) s = st; return s; }
+  function render() {
+    countEl.textContent = count; ctMe.textContent = count;
+    const pct = Math.min(count, 100);
+    me.style.left = pct + '%'; runnerMe.style.left = pct + '%';
+    const st = stageOf(count);
+    [me, runnerMe].forEach(node => {
+      const fig = node.querySelector('.figure');
+      if (fig.dataset.pose !== st[2]) { fig.dataset.pose = st[2]; const p = POSES[st[2]]; fig.innerHTML = `<svg width="26.7" height="40" viewBox="0 0 40 60">${face(...p.head)}<path class="f1" d="${p.f1}"/><path class="f2" d="${p.f2}"/></svg>`; }
+      fig.classList.toggle('step');
+    });
+    strip.querySelectorAll('.tick').forEach((t, i) => t.classList.toggle('done', count >= STAGES[i][0]));
+    document.querySelector('.lane.me .ct').innerHTML = `<span id="ct-me">${count}</span>번 · ${st[1]}`;
+  }
+  tap.addEventListener('pointerdown', e => {
+    count += 1; render();
+    tap.classList.add('pressed'); setTimeout(() => tap.classList.remove('pressed'), 90);
+    const b = document.createElement('div'); b.className = 'burst'; b.textContent = ['+1','꾹','집!','가자'][count % 4];
+    const r = tap.getBoundingClientRect(); const pr = document.getElementById('main-inner').getBoundingClientRect();
+    b.style.left = (e.clientX - pr.left + (Math.random() * 24 - 12)) + 'px'; b.style.top = (e.clientY - pr.top - 30) + 'px';
+    document.getElementById('main-inner').appendChild(b); setTimeout(() => b.remove(), 650);
+  });
+  tap.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); count += 1; render(); } });
+</script>
+</body>
+</html>

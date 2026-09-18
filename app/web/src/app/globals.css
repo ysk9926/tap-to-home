@@ -1,34 +1,128 @@
 @import "tailwindcss";
 
-/* 줄노트 + 연필 낙서 테마 토큰. 실제 색/폰트는 docs/design.md 확정 후 조정. */
+/*
+ * 줄노트 + 연필 낙서 디자인 시스템. 기준 문서는 docs/design.md, 살아있는 레퍼런스는 /dev/ui.
+ * 색은 종이·연필·매직 3톤으로 버티고, 강조는 형광펜 노랑 하나만 쓴다.
+ */
 :root {
-  --background: #fffdf5;
-  --foreground: #2b2b2b;
+  --paper: #fffdf5;
+  --paper-2: #fbf7e8;
+  --ink: #2b2b2b;
   --line: #c9d6ea;
   --margin: #f4a3a3;
   --pencil: #3a3a3a;
+  --pencil-soft: #8a8a86;
+  --marker: #1f1f1f;
+  --hilite: #fff3a3;
+  --hilite-2: #ffe86b;
+  --paper-shadow: rgba(60, 50, 20, 0.18);
+
+  /* 줄노트 가로줄 간격. 레이스 레인·진행 바는 이 값의 배수로 맞춘다 */
+  --rule-gap: 32px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
   --color-line: var(--line);
   --color-margin: var(--margin);
   --color-pencil: var(--pencil);
+  --color-pencil-soft: var(--pencil-soft);
+  --color-marker: var(--marker);
+  --color-hilite: var(--hilite);
+  --color-hilite-2: var(--hilite-2);
+  /* 기존 코드 호환용 별칭 */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+
+  /* 손으로 그린 듯 네 모서리가 제각각인 radius */
+  --radius-sketch: 14px 18px 12px 20px / 18px 12px 20px 14px;
+  --radius-sketch-sm: 8px 10px 8px 12px / 10px 8px 12px 8px;
+  --radius-sketch-lg: 22px 18px 24px 20px / 18px 24px 20px 22px;
+  --radius-bubble: 12px 14px 12px 14px / 14px 12px 14px 12px;
+
+  --shadow-paper: 4px 6px 0 var(--paper-shadow);
+
+  /* next/font 가 layout.tsx 에서 --font-gaegu, --font-nanum-pen 을 주입한다 */
+  --font-ui: var(--font-gaegu), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-note: var(--font-nanum-pen), var(--font-gaegu), "Apple SD Gothic Neo", cursive;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  /* 줄노트 가로줄 */
+/* 줄노트 가로줄. 요소 높이를 --rule-gap 배수로 두면 줄과 내용이 맞물린다 */
+@utility ruled {
+  background-color: var(--paper);
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
-    transparent 31px,
-    var(--line) 31px,
-    var(--line) 32px
+    transparent calc(var(--rule-gap) - 1px),
+    var(--line) calc(var(--rule-gap) - 1px),
+    var(--line) var(--rule-gap)
   );
+}
+
+/* 매직으로 그린 프레임. 테두리만 ::before 에 그려서 흔들림 필터가 글자를 건드리지 않게 한다 */
+@utility mk {
+  position: relative;
+  background: var(--paper);
+  border-radius: var(--radius-sketch);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--marker);
+    border-radius: inherit;
+    filter: url(#wobble);
+    pointer-events: none;
+  }
+}
+@utility mk-dashed {
+  &::before {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: var(--pencil-soft);
+  }
+}
+@utility mk-pill {
+  border-radius: 9999px;
+}
+
+/* 형광펜: 글자 아래 절반만 칠한다 */
+@utility hl {
+  background: linear-gradient(
+    transparent 42%,
+    var(--hilite) 42%,
+    var(--hilite) 92%,
+    transparent 92%
+  );
+  padding-inline: 0.15em;
+}
+
+/* 흔들림 필터를 직접 걸 때 (아이콘·선 등 글자 없는 요소) */
+@utility wobble {
+  filter: url(#wobble);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 1.35;
   /* 웹뷰 연타 시 300ms 지연/더블탭 줌 방지 */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 스톱모션 느낌: 전환은 2~3 스텝으로만 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }
