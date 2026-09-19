@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/fetch-json";
 import { withRacerCount, type RaceToday } from "../race-state";
-import { createTapBatcher } from "../tap-batcher";
+import { createTapBatcher, type TapBatcher } from "../tap-batcher";
 import { RACE_TODAY_KEY } from "./use-race-today";
 
 type TapResponse = { tapCount: number; stage: number };
@@ -12,6 +12,12 @@ type TapResponse = { tapCount: number; stage: number };
 /**
  * 탭 한 번 = 캐시의 내 카운트 +1 (즉시) + 프레임 토글 + 배치 전송.
  * 서버 응답으로 재동기화: 서버 누적 + 아직 안 보낸 탭.
+ *
+ * 배치기는 커밋되는 effect 안에서 매번 새로 만든다(= useState 초기값으로 한 번만 만들지
+ * 않는다). React StrictMode 의 dev 모드 시뮬레이션 언마운트는 effect cleanup 만 실행하고
+ * useState 초기값은 다시 실행하지 않으므로, useState 로 한 번만 만들면 시뮬레이션
+ * 언마운트 때 dispose 된 인스턴스가 그대로 남아 이후 탭이 전송되지 않는다. effect 안에서
+ * 만들면 시뮬레이션 재마운트 때 새 effect 가 다시 실행되어 새 배치기가 생긴다.
  */
 export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
   const queryClient = useQueryClient();
@@ -21,21 +27,18 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
     onTapRef.current = onTap;
   }, [onTap]);
 
-  const [batcher] = useState(() => {
-    // send 콜백이 자기 자신(배치 후 남은 pending)을 읽어야 하므로, 생성 직후 이 지역
-    // 변수에 대입해 클로저로 참조한다. tap() 은 항상 useState 반환 이후에만 호출되므로
-    // send 가 실행되는 시점엔 self 가 이미 채워져 있다.
-    const self: ReturnType<typeof createTapBatcher> = createTapBatcher(async (count) => {
+  const batcherRef = useRef<TapBatcher | null>(null);
+
+  useEffect(() => {
+    const batcher = createTapBatcher(async (count) => {
       try {
         const res = await fetchJson<TapResponse>("/api/taps", {
           method: "POST",
           body: JSON.stringify({ count }),
         });
-        queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) => {
-          if (!data) return data;
-          const pending = self.pending();
-          return withRacerCount(data, data.me.userId, res.tapCount + pending);
-        });
+        queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
+          data ? withRacerCount(data, data.me.userId, res.tapCount + batcher.pending()) : data,
+        );
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) {
           queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
@@ -46,12 +49,13 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
         throw e; // batcher 가 다음 배치에 합친다
       }
     });
-    return self;
-  });
-
-  useEffect(() => {
-    return () => batcher.dispose();
-  }, [batcher]);
+    batcherRef.current = batcher;
+    return () => {
+      batcherRef.current = null;
+      void batcher.flush(); // 언마운트 직전에 쌓인 탭은 보낸다
+      batcher.dispose();
+    };
+  }, [queryClient]);
 
   const tap = useCallback(() => {
     const at = Date.now();
@@ -59,9 +63,9 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
     queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
       data && !data.settled ? withRacerCount(data, data.me.userId, data.me.tapCount + 1) : data,
     );
-    batcher.tap();
+    batcherRef.current?.tap();
     onTapRef.current?.(at);
-  }, [queryClient, batcher]);
+  }, [queryClient]);
 
   return { tap, frame };
 }
