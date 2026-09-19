@@ -7,6 +7,7 @@ import { MarkerButton } from "@/components/marker-button";
 import { Note, Paper, ScreenTitle } from "@/components/paper";
 import { SignalToast } from "@/components/signal-toast";
 import { SpeechBubble } from "@/components/speech-bubble";
+import { TextField } from "@/components/text-field";
 import { TitleBadge } from "@/components/title-badge";
 import { RaceDemo, StickmanSheet, TapDemo } from "./demos";
 import { ExampleScreens } from "./screens";
@@ -139,6 +140,14 @@ export default function DevUiPage() {
             </div>
           </Section>
 
+          <Section id="inputs" title="입력칸" lead="줄 한 칸 높이의 밑줄. 오류는 여백선 색으로.">
+            <div className="grid max-w-[320px] gap-4">
+              <TextField label="아이디" hint="영문·숫자·_ 3~20자" placeholder="tap_to_home" />
+              <TextField label="비밀번호" type="password" defaultValue="12345678" />
+              <TextField label="닉네임" defaultValue="민경" error="이미 쓰는 아이디예요" />
+            </div>
+          </Section>
+
           <Section id="stickman" title="졸라맨" lead="포즈 7개, 프레임 2개. F1-1 임계값과 포즈의 대응은 features/race/stages.ts 가 갖는다.">
             <StickmanSheet />
           </Section>
@@ -211,6 +220,7 @@ const SECTIONS: Array<[string, string]> = [
   ["type", "타이포"],
   ["frames", "종이와 프레임"],
   ["buttons", "버튼"],
+  ["inputs", "입력칸"],
   ["stickman", "졸라맨"],
   ["race", "레이스 레인"],
   ["signals", "신호 토스트"],
