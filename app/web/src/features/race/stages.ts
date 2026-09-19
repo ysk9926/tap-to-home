@@ -34,3 +34,8 @@ export function stageOf(count: number): Stage {
 export function progressOf(count: number): number {
   return Math.min(count, HOME_THRESHOLD);
 }
+
+/** DB 에 저장하는 단계 번호(0~5) */
+export function stageIndexOf(count: number): number {
+  return STAGES.indexOf(stageOf(count));
+}
