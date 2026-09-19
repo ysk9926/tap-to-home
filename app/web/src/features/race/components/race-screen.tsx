@@ -15,7 +15,7 @@ import { RACE_TODAY_KEY, useRaceToday } from "../hooks/use-race-today";
 import { useTap } from "../hooks/use-tap";
 import { withRacerCount, type RaceToday } from "../race-state";
 import { stageOf } from "../stages";
-import { RaceLane, StageTicks } from "./race-lane";
+import { RaceLane } from "./race-lane";
 import { StageStrip } from "./stage-strip";
 
 export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; realtimeEnabled: boolean }) {
@@ -116,7 +116,6 @@ export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; r
           </Note>
         ) : (
           <>
-            <StageTicks className="mt-2" />
             {data.racers.map((r, i) => (
               <RaceLane
                 key={r.userId}

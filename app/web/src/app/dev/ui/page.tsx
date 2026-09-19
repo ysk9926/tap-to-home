@@ -177,9 +177,9 @@ export default function DevUiPage() {
             </div>
             <div className="mt-5 flex items-end gap-4 text-pencil-soft">
               {STAGES.map((s) => (
-                <StageLandmark key={s.key} stage={s.key} size={20} />
+                <StageLandmark key={s.key} stage={s.key} size={18} />
               ))}
-              <span className="font-note text-lg">size=20 · StageTicks 에서 쓰는 크기</span>
+              <span className="font-note text-lg">size=18 · RaceLane 트랙 눈금 크기</span>
             </div>
           </Section>
 

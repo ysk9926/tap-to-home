@@ -9,7 +9,7 @@ import { SignalToast } from "@/components/signal-toast";
 import { Stickman } from "@/components/stickman";
 import { TapButton } from "@/components/tap-button";
 import { TitleBadge } from "@/components/title-badge";
-import { RaceLane, StageTicks } from "@/features/race/components/race-lane";
+import { RaceLane } from "@/features/race/components/race-lane";
 import { StageStrip } from "@/features/race/components/stage-strip";
 import { stageOf } from "@/features/race/stages";
 import { PhoneFrame } from "./phone-frame";
@@ -84,7 +84,6 @@ export function ExampleScreens() {
             실시간
           </span>
         </div>
-        <StageTicks className="mt-2" />
         <RaceLane rank={1} name="민경" count={253} bubble="거의 다 왔어!" />
         <RaceLane rank={2} name="수현" count={160} />
         <RaceLane rank={3} name="나" count={count} isMe frame={frame} />

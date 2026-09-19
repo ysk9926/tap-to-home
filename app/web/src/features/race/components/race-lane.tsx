@@ -5,6 +5,12 @@ import { cn } from "@/lib/cn";
 import { STAGES, progressOf, stageOf } from "../stages";
 import { StageLandmark } from "./stage-landmark";
 
+/**
+ * 트랙 위 눈금. 양 끝은 뺀다 — 자리(0%)는 졸라맨 출발점이라 이름 칸과 겹치고,
+ * 집(100%)은 레인 오른쪽 칸의 HouseIcon 이 이미 보여준다.
+ */
+const TICK_STAGES = STAGES.filter((s) => s.key !== "seat" && s.key !== "home");
+
 type RaceLaneProps = {
   rank: number;
   name: string;
@@ -22,6 +28,7 @@ type RaceLaneProps = {
 /**
  * 친구 레이스의 한 줄. 높이 64px = 줄노트 두 칸이라 배경 줄과 발이 맞물린다.
  * 랭킹·이름·횟수 / 트랙 / 집 아이콘 세 칸.
+ * 트랙에는 단계 랜드마크(자리 … 지하철)가 점선 위에 옅게 서 있고 졸라맨이 그 앞을 지나간다.
  */
 export function RaceLane({
   rank,
@@ -60,6 +67,18 @@ export function RaceLane({
 
       <div className="relative h-[64px]">
         <div className="absolute inset-x-0 bottom-[5px] border-t-[1.5px] border-dashed border-pencil-soft opacity-55" />
+        {TICK_STAGES.map((s) => (
+          <StageLandmark
+            key={s.key}
+            stage={s.key}
+            size={18}
+            className={cn(
+              "absolute bottom-[5px] -translate-x-1/2 text-pencil-soft",
+              count >= s.threshold ? "opacity-70" : "opacity-40",
+            )}
+            style={{ left: `${progressOf(s.threshold)}%` }}
+          />
+        ))}
         {bubble && (
           <div
             className="absolute bottom-[52px] -translate-x-[30%]"
@@ -82,38 +101,6 @@ export function RaceLane({
       </div>
 
       <HouseIcon size={24} className="mb-1 text-marker" />
-    </div>
-  );
-}
-
-/** 집은 각 레인 오른쪽 칸의 HouseIcon 이 이미 보여주므로 눈금에서는 뺀다 */
-const TICK_STAGES = STAGES.filter((s) => s.key !== "home");
-
-/** 레인 위에 놓는 단계 랜드마크 눈금 (자리 … 지하철). RaceLane 과 같은 3칸 그리드라 트랙과 정렬된다 */
-export function StageTicks({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "grid h-[30px] shrink-0 grid-cols-[86px_1fr_28px]",
-        className,
-      )}
-    >
-      <div />
-      <div className="relative">
-        {TICK_STAGES.map((s, i) => (
-          <StageLandmark
-            key={s.key}
-            stage={s.key}
-            size={20}
-            className={cn(
-              "absolute bottom-0 text-pencil-soft",
-              i === 0 ? "translate-x-0" : "-translate-x-1/2",
-            )}
-            style={{ left: `${progressOf(s.threshold)}%` }}
-          />
-        ))}
-      </div>
-      <div />
     </div>
   );
 }
