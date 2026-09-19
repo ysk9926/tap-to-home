@@ -50,8 +50,8 @@ export function ExampleScreens() {
           </div>
           <div className="mt-1.5 grid grid-cols-4 gap-1.5 text-center text-[15px] leading-tight">
             {[
-              ["민경", 73, "home"],
-              ["수현", 52, "subway"],
+              ["민경", 312, "home"],
+              ["수현", 236, "subway"],
               ["지영", 9, "sit"],
             ].map(([n, c, p]) => (
               <div key={n as string}>
@@ -85,8 +85,8 @@ export function ExampleScreens() {
           </span>
         </div>
         <StageTicks className="mt-2" />
-        <RaceLane rank={1} name="민경" count={73} bubble="거의 다 왔어!" />
-        <RaceLane rank={2} name="수현" count={52} />
+        <RaceLane rank={1} name="민경" count={253} bubble="거의 다 왔어!" />
+        <RaceLane rank={2} name="수현" count={160} />
         <RaceLane rank={3} name="나" count={count} isMe frame={frame} />
         <RaceLane rank={4} name="지영" count={9} bubble="아직 멀어…" />
         <RaceLane rank={5} name="도윤" count={0} inactive />
@@ -136,7 +136,7 @@ export function ExampleScreens() {
             <TitleBadge name="퇴근 1시간 전 폭주형" pose="run" />
             <TitleBadge name="점심 먹고 모든 의욕을 잃은 자" pose="sit" />
             <TitleBadge name="출근하자마자 집 가고 싶었던 자" pose="home" />
-            <TitleBadge name="" pose="stand" locked hint="10번 미만인 날" />
+            <TitleBadge name="" pose="stand" locked hint="30번 미만인 날" />
             <TitleBadge name="" pose="subway" locked hint="힌트: 지하철" />
           </div>
         </div>

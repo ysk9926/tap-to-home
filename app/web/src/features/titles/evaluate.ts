@@ -1,3 +1,4 @@
+import { HOME_THRESHOLD } from "@/features/race/stages";
 import { kstHour, kstMinutes } from "@/lib/kst";
 import { TITLE_BY_ID, type TitleId } from "./catalog";
 
@@ -14,16 +15,21 @@ function sumWhere(taps: TapSample[], pred: (t: TapSample) => boolean): number {
   return taps.reduce((acc, t) => acc + (pred(t) ? t.batchSize : 0), 0);
 }
 
-/** F3-1 규칙. 조건이 여러 개 맞으면 모두. 탭이 없는 날은 칭호 없음 */
+/** 17시 이후 이만큼 누르면 폭주형. 레이스 스케일(집 300번)의 3할 */
+export const SPRINT_TAPS = 90;
+/** 이 미만이면 버틸 만했던 날. 엘리베이터(45)에도 못 간 수준 */
+export const BEARABLE_UNDER = 30;
+
+/** F3-1 규칙. 조건이 여러 개 맞으면 모두. 탭이 없는 날은 칭호 없음. 횟수 기준은 레이스 임계값(stages.ts)과 같은 스케일 */
 export function evaluateTitles({ taps, total, firstTapAt }: EvaluateInput): TitleId[] {
   if (total <= 0) return [];
   const ids: TitleId[] = [];
 
   if (firstTapAt && kstMinutes(firstTapAt) < 9 * 60 + 30) ids.push("early_leaver");
   if (sumWhere(taps, (t) => kstHour(t.tappedAt) >= 13) / total >= 0.6) ids.push("post_lunch_slump");
-  if (sumWhere(taps, (t) => kstHour(t.tappedAt) >= 17) >= 30) ids.push("last_hour_sprinter");
-  if (total >= 100) ids.push("heart_already_home");
-  if (total < 10) ids.push("bearable_day");
+  if (sumWhere(taps, (t) => kstHour(t.tappedAt) >= 17) >= SPRINT_TAPS) ids.push("last_hour_sprinter");
+  if (total >= HOME_THRESHOLD) ids.push("heart_already_home"); // 집 도착
+  if (total < BEARABLE_UNDER) ids.push("bearable_day");
 
   return ids;
 }

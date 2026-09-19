@@ -10,6 +10,8 @@ import { SignalToast } from "@/components/signal-toast";
 import { SpeechBubble } from "@/components/speech-bubble";
 import { TextField } from "@/components/text-field";
 import { TitleBadge } from "@/components/title-badge";
+import { StageLandmark } from "@/features/race/components/stage-landmark";
+import { STAGES } from "@/features/race/stages";
 import { RaceDemo, StickmanSheet, TapDemo } from "./demos";
 import { ExampleScreens } from "./screens";
 
@@ -159,6 +161,28 @@ export default function DevUiPage() {
             <StickmanSheet />
           </Section>
 
+          <Section id="landmarks" title="구간 랜드마크" lead="트랙 위에 서는 손그림 표지. 연필 1.7px, 직선 대신 살짝 휜 곡선. 집만 매직 HouseIcon.">
+            <div className="flex flex-wrap items-end gap-6">
+              {STAGES.map((s) => (
+                <div key={s.key} className="flex flex-col items-center gap-1 text-center font-note text-lg text-pencil">
+                  <div className="flex h-[64px] items-end text-pencil">
+                    <StageLandmark stage={s.key} size={s.key === "home" ? 60 : 56} className={s.key === "home" ? "text-marker" : undefined} />
+                  </div>
+                  <div>{s.label}</div>
+                  <div className="text-sm text-pencil-soft">
+                    {s.threshold}회 <code className="font-mono text-[11px]">{s.key}</code>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex items-end gap-4 text-pencil-soft">
+              {STAGES.map((s) => (
+                <StageLandmark key={s.key} stage={s.key} size={20} />
+              ))}
+              <span className="font-note text-lg">size=20 · StageTicks 에서 쓰는 크기</span>
+            </div>
+          </Section>
+
           <Section id="race" title="레이스 레인" lead="RaceLane 높이 64px 은 줄노트 두 칸. 배경 줄과 발이 맞물린다.">
             <RaceDemo />
           </Section>
@@ -230,6 +254,7 @@ const SECTIONS: Array<[string, string]> = [
   ["inputs", "입력칸"],
   ["nav", "하단 탭"],
   ["stickman", "졸라맨"],
+  ["landmarks", "구간 랜드마크"],
   ["race", "레이스 레인"],
   ["signals", "신호 토스트"],
   ["badges", "칭호 뱃지"],

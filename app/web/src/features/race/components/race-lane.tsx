@@ -3,6 +3,7 @@ import { SpeechBubble } from "@/components/speech-bubble";
 import { Stickman } from "@/components/stickman";
 import { cn } from "@/lib/cn";
 import { STAGES, progressOf, stageOf } from "../stages";
+import { StageLandmark } from "./stage-landmark";
 
 type RaceLaneProps = {
   rank: number;
@@ -85,9 +86,10 @@ export function RaceLane({
   );
 }
 
-const TICK_STAGES = STAGES.filter((s) => s.key !== "elevator");
+/** 집은 각 레인 오른쪽 칸의 HouseIcon 이 이미 보여주므로 눈금에서는 뺀다 */
+const TICK_STAGES = STAGES.filter((s) => s.key !== "home");
 
-/** 레인 위에 놓는 단계 눈금 (회사 … 집). RaceLane 과 같은 3칸 그리드라 트랙과 정렬된다 */
+/** 레인 위에 놓는 단계 랜드마크 눈금 (자리 … 지하철). RaceLane 과 같은 3칸 그리드라 트랙과 정렬된다 */
 export function StageTicks({ className }: { className?: string }) {
   return (
     <div
@@ -98,22 +100,17 @@ export function StageTicks({ className }: { className?: string }) {
     >
       <div />
       <div className="relative">
-        {/* 트랙이 좁아 0%·10% 눈금이 겹치므로 엘리베이터는 생략 */}
         {TICK_STAGES.map((s, i) => (
-          <span
+          <StageLandmark
             key={s.key}
+            stage={s.key}
+            size={20}
             className={cn(
-              "absolute whitespace-nowrap font-note text-sm text-pencil-soft",
-              i === 0
-                ? "translate-x-0"
-                : i === TICK_STAGES.length - 1
-                  ? "-translate-x-full"
-                  : "-translate-x-1/2",
+              "absolute bottom-0 text-pencil-soft",
+              i === 0 ? "translate-x-0" : "-translate-x-1/2",
             )}
-            style={{ left: `${s.threshold}%` }}
-          >
-            {i === 0 ? "회사" : s.short}
-          </span>
+            style={{ left: `${progressOf(s.threshold)}%` }}
+          />
         ))}
       </div>
       <div />

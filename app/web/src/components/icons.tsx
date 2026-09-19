@@ -9,19 +9,38 @@ const stroke = {
   strokeLinejoin: "round",
 } as const;
 
-/** 매직으로 그린 집. 레이스의 도착점 */
+/**
+ * 손으로 그린 집. 레이스의 도착점.
+ * 지붕·벽·바닥은 매직(2.2px), 굴뚝·연기·문·창문은 그 위에 얹은 가는 선(1.6px).
+ * 직선 대신 살짝 휜 곡선을 쓰고 모서리는 조금씩 삐져나가게 둔다.
+ */
 export function HouseIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg
       width={size}
-      height={size * (26 / 28)}
-      viewBox="0 0 28 26"
+      height={size}
+      viewBox="0 0 30 30"
+      className="overflow-visible"
       aria-hidden="true"
       {...props}
     >
+      {/* 지붕 → 벽 → 바닥 */}
       <path
-        d="M3 12 L14 3 L25 12 M6 11 V23 H22 V11 M12 23 V16 H17 V23"
+        d="M2.8 18.4 Q9.4 12 15.2 6.4 Q21 12.2 27.6 18.1 M6.4 15 L6 29.2 M24.2 14.8 L24.6 29.2 M1.8 29.4 Q15 28.6 28.6 29.3"
         strokeWidth="2.2"
+        {...stroke}
+      />
+      {/* 굴뚝 · 문 · 창문 */}
+      <path
+        d="M19.2 11.2 L19.3 7.4 L22.9 7.2 L23.1 14.2 M11.6 29.2 L11.5 21.2 Q13.6 20.5 15.8 21.2 L15.9 29.2 M14.3 25.2 l.1 0 M18.4 19.6 L22.4 19.5 L22.5 23.5 L18.5 23.6 Z"
+        strokeWidth="1.6"
+        {...stroke}
+      />
+      {/* 연기 */}
+      <path
+        d="M21 5.6 Q22.8 4.2 21.4 2.6 Q20.4 1.4 21.6 .6"
+        strokeWidth="1.4"
+        opacity=".7"
         {...stroke}
       />
     </svg>

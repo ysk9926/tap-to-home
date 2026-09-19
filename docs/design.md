@@ -56,11 +56,11 @@
 | `SignalToast` | 퇴근 신호 토스트. `level` normal / strong / urgent / rescue |
 | `TitleBadge` | 도감 한 칸. `locked`, `hint`, `isNew` |
 | `Highlight` | 형광펜 span |
-| `HouseIcon`, `BellIcon`, `CrownIcon` | 매직 아이콘 |
+| `HouseIcon`, `BellIcon`, `CrownIcon` | 매직 아이콘. 집은 지붕·벽·바닥만 매직(2.2px)이고 굴뚝·연기·문·창문은 가는 선으로 얹은 손그림 |
 | `TextField` | 밑줄 입력칸. label, hint, error |
 | `BottomNav` | 하단 탭 4개. 활성 탭은 매직 밑줄 |
 
-레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`), `StageStrip` 이 메인 진행 바, `RaceLane` + `StageTicks` 가 친구 레이스 한 줄. 레인 높이 64px = 줄노트 두 칸.
+레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`), `StageLandmark` 가 단계별 손그림 표지(40×40 viewBox, 바닥선 y≈39 가 트랙에 닿음, 연필 1.7px, 집만 `HouseIcon`), `StageStrip` 이 메인 진행 바(높이 96px = 줄노트 세 칸, 트랙 위 랜드마크 + 아래 이름표), `RaceLane` + `StageTicks` 가 친구 레이스 한 줄(눈금은 글자 대신 size 20 랜드마크). 레인 높이 64px = 줄노트 두 칸.
 
 ## 규칙
 

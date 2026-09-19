@@ -16,7 +16,7 @@ beforeAll(async () => {
     createTestUser("stranger"),
   ]);
   await prisma.friendship.create({ data: { requesterId: friend.id, addresseeId: me.id } });
-  await recordTaps(friend.id, 30, NOW);
+  await recordTaps(friend.id, 100, NOW);
   await recordTaps(stranger.id, 99, NOW);
 });
 afterAll(async () => {
@@ -30,6 +30,6 @@ describe("getRaceToday", () => {
     expect(data.settled).toBe(false);
     expect(data.me).toMatchObject({ userId: me.id, tapCount: 0, stage: 0, isMe: true });
     expect(data.racers.map((r) => r.userId)).toEqual([friend.id, me.id]);
-    expect(data.racers[0]).toMatchObject({ tapCount: 30, stage: 2, isMe: false, username: friend.username });
+    expect(data.racers[0]).toMatchObject({ tapCount: 100, stage: 2, isMe: false, username: friend.username });
   });
 });

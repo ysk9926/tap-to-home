@@ -29,8 +29,8 @@ describe("recordTaps", () => {
 
   it("increments atomically and advances stage", async () => {
     const later = new Date(NOW.getTime() + 60_000);
-    const r = await recordTaps(userId, 8, later);
-    expect(r).toEqual({ tapCount: 11, stage: 1 });
+    const r = await recordTaps(userId, 42, later);
+    expect(r).toEqual({ tapCount: 45, stage: 1 });
     const run = await prisma.dailyRun.findUniqueOrThrow({
       where: { userId_runDate: { userId, runDate: kstDate(NOW) } },
     });
@@ -51,6 +51,6 @@ describe("recordTaps", () => {
     const afterRejected = await prisma.dailyRun.findUniqueOrThrow({
       where: { userId_runDate: { userId, runDate: kstDate(NOW) } },
     });
-    expect(afterRejected.tapCount).toBe(11); // 증가분이 롤백되어 그대로
+    expect(afterRejected.tapCount).toBe(45); // 증가분이 롤백되어 그대로
   });
 });

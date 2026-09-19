@@ -102,8 +102,8 @@ export function RaceDemo() {
   return (
     <div className="flex flex-wrap items-start gap-8">
       <div className="w-[320px] shrink-0 pt-8">
-        <RaceLane rank={1} name="민경" count={73} bubble="거의 다 왔어!" />
-        <RaceLane rank={2} name="수현" count={52} />
+        <RaceLane rank={1} name="민경" count={253} bubble="거의 다 왔어!" />
+        <RaceLane rank={2} name="수현" count={160} />
         <RaceLane rank={3} name="나" count={count} isMe frame={frame} />
         <RaceLane rank={4} name="지영" count={9} bubble="아직 멀어…" />
         <RaceLane rank={5} name="도윤" count={0} inactive />
