@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { BottomNav } from "@/components/bottom-nav";
 import { Highlight } from "@/components/highlight";
 import { BellIcon, CrownIcon, HouseIcon } from "@/components/icons";
 import { MarkerBox } from "@/components/marker-box";
@@ -148,6 +149,12 @@ export default function DevUiPage() {
             </div>
           </Section>
 
+          <Section id="nav" title="하단 탭" lead="활성 탭은 매직 밑줄. 화면 안에 붙박이로 보여주려고 position 만 풀었다.">
+            <div className="relative h-16 w-[360px] [&_nav]:absolute">
+              <BottomNav />
+            </div>
+          </Section>
+
           <Section id="stickman" title="졸라맨" lead="포즈 7개, 프레임 2개. F1-1 임계값과 포즈의 대응은 features/race/stages.ts 가 갖는다.">
             <StickmanSheet />
           </Section>
@@ -221,6 +228,7 @@ const SECTIONS: Array<[string, string]> = [
   ["frames", "종이와 프레임"],
   ["buttons", "버튼"],
   ["inputs", "입력칸"],
+  ["nav", "하단 탭"],
   ["stickman", "졸라맨"],
   ["race", "레이스 레인"],
   ["signals", "신호 토스트"],

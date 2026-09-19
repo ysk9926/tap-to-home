@@ -58,6 +58,7 @@
 | `Highlight` | 형광펜 span |
 | `HouseIcon`, `BellIcon`, `CrownIcon` | 매직 아이콘 |
 | `TextField` | 밑줄 입력칸. label, hint, error |
+| `BottomNav` | 하단 탭 4개. 활성 탭은 매직 밑줄 |
 
 레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`), `StageStrip` 이 메인 진행 바, `RaceLane` + `StageTicks` 가 친구 레이스 한 줄. 레인 높이 64px = 줄노트 두 칸.
 
