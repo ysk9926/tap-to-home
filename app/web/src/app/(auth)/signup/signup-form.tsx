@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { TextField } from "@/components/text-field";
+import { authErrorMessage, NETWORK_ERROR } from "@/lib/auth/auth-error";
 import { signUp } from "@/lib/auth/client";
 import { placeholderEmail } from "@/lib/auth/placeholder-email";
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/i;
 
-type FieldErrors = { username?: string; name?: string; password?: string };
+type FieldErrors = { username?: string; name?: string; password?: string; form?: string };
 
 function validate(username: string, name: string, password: string): FieldErrors {
   const errors: FieldErrors = {};
@@ -36,22 +37,28 @@ export function SignupForm() {
     if (Object.keys(next).length > 0) return;
 
     setPending(true);
-    const { error } = await signUp.email({
-      email: placeholderEmail(trimmedUsername),
-      password,
-      name: trimmedName,
-      username: trimmedUsername,
-      displayUsername: trimmedUsername,
-    });
-    setPending(false);
-    if (error) {
-      setErrors({
-        username: error.code === "USERNAME_IS_ALREADY_TAKEN" ? "이미 쓰는 아이디예요" : "가입에 실패했어요",
+    try {
+      const { error } = await signUp.email({
+        email: placeholderEmail(trimmedUsername),
+        password,
+        name: trimmedName,
+        username: trimmedUsername,
+        displayUsername: trimmedUsername,
       });
-      return;
+      if (error) {
+        const { field, message } = authErrorMessage(error);
+        setErrors(field ? { [field]: message } : { form: message });
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch {
+      // 연결이 끊기면 fetch 가 응답 없이 그대로 throw 한다
+      setErrors({ form: NETWORK_ERROR.message });
+    } finally {
+      // 실패해도 버튼은 반드시 돌아온다 (F0-1)
+      setPending(false);
     }
-    router.push("/");
-    router.refresh();
   }
 
   return (
@@ -84,6 +91,11 @@ export function SignupForm() {
         error={errors.password}
         required
       />
+      {errors.form && (
+        <p role="alert" className="font-note text-base text-margin">
+          {errors.form}
+        </p>
+      )}
       <MarkerButton type="submit" disabled={pending} className="mt-2">
         {pending ? "만드는 중…" : "만들고 시작하기"}
       </MarkerButton>

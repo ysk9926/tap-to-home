@@ -4,27 +4,35 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { TextField } from "@/components/text-field";
+import { authErrorMessage, NETWORK_ERROR, type AuthErrorMessage } from "@/lib/auth/auth-error";
 import { signIn } from "@/lib/auth/client";
 
 export function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<AuthErrorMessage | null>(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    setFailure(null);
     setPending(true);
-    const { error } = await signIn.username({ username: username.trim(), password });
-    setPending(false);
-    if (error) {
-      setError("아이디 또는 비밀번호가 틀렸어요");
-      return;
+    try {
+      const { error } = await signIn.username({ username: username.trim(), password });
+      if (error) {
+        setFailure(authErrorMessage(error));
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch {
+      // 연결이 끊기면 fetch 가 응답 없이 그대로 throw 한다
+      setFailure(NETWORK_ERROR);
+    } finally {
+      // 실패해도 버튼은 반드시 돌아온다 (F0-1)
+      setPending(false);
     }
-    router.push("/");
-    router.refresh();
   }
 
   return (
@@ -35,6 +43,7 @@ export function LoginForm() {
         autoCapitalize="none"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        error={failure?.field === "username" ? failure.message : undefined}
         required
       />
       <TextField
@@ -43,9 +52,14 @@ export function LoginForm() {
         autoComplete="current-password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        error={error ?? undefined}
+        error={failure?.field === "password" ? failure.message : undefined}
         required
       />
+      {failure && failure.field === null && (
+        <p role="alert" className="font-note text-base text-margin">
+          {failure.message}
+        </p>
+      )}
       <MarkerButton type="submit" disabled={pending} className="mt-2">
         {pending ? "들어가는 중…" : "들어가기"}
       </MarkerButton>
