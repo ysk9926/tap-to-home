@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createTestUser, deleteTestUsers } from "../../../../test/db";
-import { SIGNAL_COOLDOWN_MS, sendSignal, takeUnreadSignals } from "./signals";
+import { SIGNAL_COOLDOWN_MS, markSignalsRead, sendSignal, takeUnreadSignals } from "./signals";
 
 const NOW = new Date("2026-09-19T04:00:00Z");
 let s: { id: string; name: string };
@@ -44,5 +44,21 @@ describe("takeUnreadSignals", () => {
     expect(unread.length).toBeGreaterThan(0);
     expect(unread[0]).toMatchObject({ senderName: s.name, level: expect.any(String) });
     expect(await takeUnreadSignals(r1.id, at)).toEqual([]);
+  });
+});
+
+describe("markSignalsRead", () => {
+  it("marks the realtime-delivered rows read so the polling path does not re-toast them", async () => {
+    const at = new Date(NOW.getTime() + 3 * SIGNAL_COOLDOWN_MS);
+    const result = await sendSignal(s.id, "rescue", at);
+    expect(result.signals.map((row) => row.receiverId).sort()).toEqual([r1.id, r2.id].sort());
+
+    await markSignalsRead(
+      result.signals.map((row) => row.id),
+      at,
+    );
+
+    expect(await takeUnreadSignals(r1.id, at)).toEqual([]);
+    expect(await takeUnreadSignals(r2.id, at)).toEqual([]);
   });
 });
