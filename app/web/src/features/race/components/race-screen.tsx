@@ -1,8 +1,13 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TapButton } from "@/components/tap-button";
+import { COMBO_WINDOW_MS, createComboTracker } from "@/features/signal/combo";
+import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
+import { useSignalToasts } from "@/features/signal/hooks/use-signal-toasts";
+import { fetchJson } from "@/lib/fetch-json";
 import { kstDateLabel } from "@/lib/kst";
 import { useRaceToday } from "../hooks/use-race-today";
 import { useTap } from "../hooks/use-tap";
@@ -13,7 +18,30 @@ import { StageStrip } from "./stage-strip";
 
 export function RaceScreen({ initial }: { initial: RaceToday }) {
   const { data } = useRaceToday(initial, { polling: true });
-  const { tap, frame } = useTap();
+  const { toasts } = useSignalToasts({ polling: true });
+
+  // 연타 감지: 탭마다 창을 다시 열고, 창이 닫히면 최고 등급 하나만 보낸다 (F2)
+  // 트래커 자체는 리렌더를 유발할 필요가 없는 안정적인 싱글턴이라 setter 는 쓰지 않는다.
+  // useRef(createComboTracker()) 는 매 렌더 인자를 만들고 react-hooks/refs 는 렌더 중
+  // ref.current 를 지연 초기화용으로 읽는 것도 금지하므로, 지연 초기화가 허용되는
+  // useState 초기화 함수로 한 번만 만든다.
+  const [combo] = useState(() => createComboTracker());
+  const comboTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onTap = useCallback((at: number) => {
+    combo.tap(at);
+    if (comboTimer.current) clearTimeout(comboTimer.current);
+    comboTimer.current = setTimeout(() => {
+      const level = combo.settle(Date.now());
+      if (level) {
+        void fetchJson("/api/signals", { method: "POST", body: JSON.stringify({ level }) }).catch(() => {});
+      }
+    }, COMBO_WINDOW_MS + 50);
+  }, [combo]);
+  useEffect(() => () => {
+    if (comboTimer.current) clearTimeout(comboTimer.current);
+  }, []);
+
+  const { tap, frame } = useTap({ onTap });
   const me = data.me;
   const friends = data.racers.filter((r) => !r.isMe);
 
@@ -79,6 +107,8 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
           </>
         )}
       </section>
+
+      <SignalToastLayer toasts={toasts} />
     </div>
   );
 }
