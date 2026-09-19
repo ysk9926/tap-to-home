@@ -18,8 +18,8 @@ F1-2 는 친구의 탭이 1초 안에 내 화면에 반영돼야 한다. Vercel 
 
 **A 안.** Postgres 는 Supabase 에 두고, 친구 위치 전파는 Supabase Realtime broadcast 채널을 쓴다. 인증은 better-auth 를 유지하고 Supabase Auth 와 RLS 는 사용하지 않는다.
 
-- 브라우저: `src/lib/supabase/client.ts` 의 publishable 클라이언트로 `race:{date}:{userId}` 형태의 채널을 친구 수만큼 구독한다 (채널 이름은 구현 시 확정).
-- 서버: 탭 저장 route handler 가 `src/lib/supabase/server.ts` 의 secret 키 클라이언트로 내 채널에 `{ userId, tapCount, stage }` 를 보낸다.
+- 브라우저: `src/lib/supabase/client.ts` 의 publishable 클라이언트로 내 채널 `u:{myId}` (signal 이벤트) 와 친구 채널 `u:{friendId}` (race 이벤트) 를 구독한다. 채널·이벤트 이름은 `src/features/realtime/channels.ts`.
+- 서버: 탭 저장·신호 발송 route handler 가 `next/server` 의 `after()` 안에서 `src/features/realtime/server/broadcast.ts` (secret 키, REST `httpSend`) 로 보낸다. 실패해도 응답은 성공이고 폴링이 받쳐준다.
 - 개방형 데모이므로 public 채널로 시작한다. 채널 인가가 필요해지면 Realtime Authorization(private channel + RLS on `realtime.messages`)으로 올린다.
 
 Realtime 연결 전까지는 B 안(폴링, `refetchInterval` 2s)으로 화면을 먼저 동작시켜도 된다. 탭 저장 API 는 두 안에서 동일하다.

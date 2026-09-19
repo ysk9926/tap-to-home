@@ -2,23 +2,46 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TapButton } from "@/components/tap-button";
+import { useRaceRealtime } from "@/features/realtime/hooks/use-race-realtime";
 import { COMBO_WINDOW_MS, createComboTracker } from "@/features/signal/combo";
 import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
 import { useSignalToasts } from "@/features/signal/hooks/use-signal-toasts";
 import { fetchJson } from "@/lib/fetch-json";
 import { kstDateLabel } from "@/lib/kst";
-import { useRaceToday } from "../hooks/use-race-today";
+import { RACE_TODAY_KEY, useRaceToday } from "../hooks/use-race-today";
 import { useTap } from "../hooks/use-tap";
-import type { RaceToday } from "../race-state";
+import { withRacerCount, type RaceToday } from "../race-state";
 import { stageOf } from "../stages";
 import { RaceLane, StageTicks } from "./race-lane";
 import { StageStrip } from "./stage-strip";
 
-export function RaceScreen({ initial }: { initial: RaceToday }) {
-  const { data } = useRaceToday(initial, { polling: true });
-  const { toasts } = useSignalToasts({ polling: true });
+export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; realtimeEnabled: boolean }) {
+  const queryClient = useQueryClient();
+  // useRaceRealtime 은 friendIds 를 data.racers 에서 뽑아야 해서 아래 두 훅(useRaceToday,
+  // useSignalToasts) 뒤에 호출된다. 그런데 그 두 훅의 polling 여부는 useRaceRealtime 의
+  // connected 결과가 필요하다 — 순서상 되돌아 참조할 수 없으므로, connected 는 여기서
+  // useState 로 소유하고 useRaceRealtime 에는 이를 갱신하는 setter 를 넘긴다. subscribe()
+  // 콜백(이벤트 핸들러)에서 직접 호출되므로 useEffect 본문 setState 가 아니라
+  // react-hooks/set-state-in-effect 에 걸리지 않는다.
+  const [connected, setConnected] = useState(false);
+  const { data } = useRaceToday(initial, { polling: !connected });
+  const { toasts, push } = useSignalToasts({ polling: !connected });
+
+  useRaceRealtime({
+    myId: initial.me.userId,
+    friendIds: data.racers.filter((r) => !r.isMe).map((r) => r.userId),
+    onRace: (p) => {
+      queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (cur) =>
+        cur && cur.date === p.date && p.userId !== cur.me.userId ? withRacerCount(cur, p.userId, p.tapCount) : cur,
+      );
+    },
+    onSignal: push,
+    enabled: realtimeEnabled,
+    onConnectedChange: setConnected,
+  });
 
   // 연타 감지: 탭마다 창을 다시 열고, 창이 닫히면 최고 등급 하나만 보낸다 (F2)
   // 트래커 자체는 리렌더를 유발할 필요가 없는 안정적인 싱글턴이라 setter 는 쓰지 않는다.
@@ -80,7 +103,7 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
           </div>
           <span className="inline-flex items-center gap-1.5 font-note text-[17px] text-pencil">
             <i className="h-2 w-2 animate-pulse rounded-full bg-marker" />
-            2초마다 갱신
+            {connected ? "실시간" : "2초마다 갱신"}
           </span>
         </div>
 

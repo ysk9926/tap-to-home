@@ -1,4 +1,7 @@
+import { after } from "next/server";
 import type { SignalLevel } from "@/components/signal-toast";
+import { SIGNAL_EVENT, userChannel, type SignalPayload } from "@/features/realtime/channels";
+import { broadcast } from "@/features/realtime/server/broadcast";
 import { sendSignal } from "@/features/signal/server/signals";
 import { jsonError, parseJson } from "@/lib/api";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -17,5 +20,14 @@ export async function POST(request: Request) {
   const body = await parseJson(request, validateBody);
   if (!body) return jsonError(400, "level 이 잘못됐어요");
   const { delivered } = await sendSignal(user.id, body.level);
+  const sentAt = new Date().toISOString();
+  after(() =>
+    Promise.all(
+      delivered.map((receiverId) => {
+        const payload: SignalPayload = { id: `${user.id}:${sentAt}`, senderName: user.name, level: body.level, sentAt };
+        return broadcast(userChannel(receiverId), SIGNAL_EVENT, payload);
+      }),
+    ),
+  );
   return Response.json({ delivered: delivered.length });
 }
