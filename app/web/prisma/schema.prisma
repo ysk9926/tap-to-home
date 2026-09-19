@@ -35,6 +35,7 @@ model User {
   signalsSent          Signal[]     @relation("SignalSender")
   signalsReceived      Signal[]     @relation("SignalReceiver")
   titles               UserTitle[]
+  pushTokens           PushToken[]
 
   @@map("user")
 }
@@ -190,4 +191,25 @@ model DailyResult {
   dailyRun       DailyRun @relation(fields: [dailyRunId], references: [id], onDelete: Cascade)
 
   @@map("daily_result")
+}
+
+// ───────────────────────────── push ─────────────────────────────
+// 네이티브 푸시 토큰 (docs/decisions/0006). 발송은 src/features/push/server.
+
+enum PushPlatform {
+  ios
+  android
+}
+
+model PushToken {
+  id        String       @id @default(uuid())
+  userId    String
+  token     String       @unique
+  platform  PushPlatform
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_token")
 }

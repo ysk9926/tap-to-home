@@ -86,3 +86,16 @@ pk(userId, titleId). 도감 카운트 = count(*) / catalog 길이.
 | settledAt | timestamptz | |
 
 존재하면 그날은 정산된 것이고 `POST /api/taps` 는 409 를 돌려준다.
+
+## push_token — 네이티브 푸시 토큰 (ADR 0006)
+
+| 컬럼 | 타입 | 비고 |
+| --- | --- | --- |
+| id | uuid pk | |
+| userId | text fk user | 한 사용자가 기기 여러 대를 쓸 수 있어 여러 행 |
+| token | text unique | FCM 등록 토큰. 같은 토큰이 다른 계정에서 올라오면 소유자를 바꾼다 |
+| platform | enum ios/android | 통계·디버깅용 |
+| createdAt | timestamptz | |
+| updatedAt | timestamptz | 앱이 올릴 때마다 갱신. 오래된 행을 정리할 때 기준 |
+
+발송이 `UNREGISTERED` 를 돌려주면 그 행을 지운다. 앱은 실행할 때마다 토큰을 올리고, 서버는 upsert 한다.

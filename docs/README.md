@@ -10,7 +10,9 @@
 | [tech-stack.md](tech-stack.md) | 스택과 선택 이유, 로컬 환경 |
 | [data-model.md](data-model.md) | PostgreSQL 테이블 설계 초안 |
 | [deploy.md](deploy.md) | Vercel + Supabase 설정, 환경 변수, 배포 후 확인 |
+| [ios-release.md](ios-release.md) | iOS 번들 ID, 서명, App Store Connect, 심사 제출 절차 |
+| [push-setup.md](push-setup.md) | FCM 푸시. APNs 키, Firebase 콘솔, 빌드 머신 설정 |
 | [design.md](design.md) | 줄노트·연필 낙서 UI 테마 방향 |
-| [decisions/](decisions/) | ADR. 0001 모노레포, 0002 실시간, 0003 ORM(Prisma), 0004 손그림 UI, 0005 아이디 로그인·칭호 카탈로그 |
+| [decisions/](decisions/) | ADR. 0001 모노레포, 0002 실시간, 0003 ORM(Prisma), 0004 손그림 UI, 0005 아이디 로그인·칭호 카탈로그, 0006 네이티브 푸시(FCM) |
 | [superpowers/specs](../docs/superpowers/specs) | 프로토타입 설계 스펙 |
 | [superpowers/plans](../docs/superpowers/plans) | 프로토타입 구현 계획 |

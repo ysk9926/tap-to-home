@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { Paper } from "@/components/paper";
 import { FriendRequestWatcher } from "@/features/friends/components/friend-request-watcher";
 import { getFriendsState } from "@/features/friends/server/friends-state";
+import { PushRegistrar } from "@/features/push/components/push-registrar";
 import { realtimeEnabled } from "@/features/realtime/server/enabled";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col px-3 pt-4">{children}</div>
       <BottomNav />
       <FriendRequestWatcher myId={user.id} initial={friends} realtimeEnabled={realtimeEnabled()} />
+      <PushRegistrar />
     </Paper>
   );
 }

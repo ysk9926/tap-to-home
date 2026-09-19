@@ -21,6 +21,8 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.0.1" apply false
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+    // FCM (docs/decisions/0006-native-push-fcm.md). google-services.json 을 읽는다
+    id("com.google.gms.google-services") version "4.4.4" apply false
 }
 
 include(":app")

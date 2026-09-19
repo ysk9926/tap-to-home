@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import type { SignalLevel } from "@/components/signal-toast";
+import { sendSignalPush } from "@/features/push/server/send-signal-push";
 import { SIGNAL_EVENT, userChannel, type SignalPayload } from "@/features/realtime/channels";
 import { broadcast } from "@/features/realtime/server/broadcast";
 import { markSignalsRead, sendSignal } from "@/features/signal/server/signals";
@@ -36,6 +37,10 @@ export async function POST(request: Request) {
     );
     const okIds = results.filter((id): id is string => id !== null);
     await markSignalsRead(okIds);
+    // 실시간으로 못 닿은 신호만 푸시한다. 화면을 보고 있던 사람은 방금 토스트로 봤다 (ADR 0006).
+    // sendSignalPush 가 readAt 을 한 번 더 확인하므로 경합에도 중복이 나지 않는다.
+    const unreachedIds = signals.map((s) => s.id).filter((id) => !okIds.includes(id));
+    await sendSignalPush(unreachedIds, user.name, body.level);
   });
   return Response.json({ delivered: delivered.length });
 }

@@ -1,7 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+ 알림 권한 (docs/decisions/0006). 런타임에 사용자에게 묻는다 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="tap_to_home_mobile"
+        android:label="퇴근 레이스"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

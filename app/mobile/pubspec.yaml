@@ -1,7 +1,7 @@
 name: tap_to_home_mobile
 description: "Tap to Home mobile shell (webview)."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.12.0
@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   webview_flutter: ^4.14.1
+  # 퇴근 신호 백그라운드 푸시 (docs/decisions/0006-native-push-fcm.md).
+  # 토큰을 받아 JS 채널로 웹에 넘기는 용도. 신호 로직은 웹에 있다
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.0.4
 
 dev_dependencies:
   flutter_test:
