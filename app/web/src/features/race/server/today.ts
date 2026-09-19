@@ -1,16 +1,24 @@
 import "server-only";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { kstDate, todayKst } from "@/lib/kst";
 import { listFriendIds } from "@/features/friends/server/list-friend-ids";
 import { sortRacers, type RaceToday, type Racer } from "../race-state";
 
-/** 오늘(KST) 나+친구의 레이스 상태. 페이지 초기 데이터와 GET /api/race/today 가 같이 쓴다 */
-export async function getRaceToday(user: CurrentUser, now: Date = new Date()): Promise<RaceToday> {
+/**
+ * 오늘(KST) 나+친구의 레이스 상태. 페이지 초기 데이터와 GET /api/race/today 가 같이 쓴다.
+ * `db` 를 넘기면 호출자가 이미 열어 둔 트랜잭션 안에서 같은 커넥션으로 읽는다.
+ */
+export async function getRaceToday(
+  user: CurrentUser,
+  now: Date = new Date(),
+  db: Prisma.TransactionClient = prisma,
+): Promise<RaceToday> {
   const runDate = kstDate(now);
-  const friendIds = await listFriendIds(user.id);
+  const friendIds = await listFriendIds(user.id, db);
 
-  const users = await prisma.user.findMany({
+  const users = await db.user.findMany({
     where: { id: { in: [user.id, ...friendIds] } },
     select: {
       id: true,

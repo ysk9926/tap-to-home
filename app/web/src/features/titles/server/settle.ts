@@ -28,7 +28,9 @@ function toTitleIds(ids: string[]): TitleId[] {
  * 보게 하려면 하나의 interactive transaction 안에서 그 행을 `SELECT ... FOR UPDATE` 로
  * 잠근 뒤에 읽어야 한다 (`recordTaps` 의 UPDATE 도 같은 행 lock 을 잡으므로 직렬화된다).
  * 그래서 아래는 브리프의 순차 버전 대신, 1) upsert 로 행을 보장하고 2) 그 행을 잠그고
- * 3) 잠근 뒤에 읽는 순서로 구현한다. `getRaceToday` 를 제외한 모든 DB 접근은 `tx` 를 쓴다.
+ * 3) 잠근 뒤에 읽는 순서로 구현한다. 랭킹 조회(`getRaceToday`)도 `tx` 로 넘겨, 이 함수 안의
+ * 모든 DB 접근이 같은 트랜잭션 커넥션을 쓰고 같은 스냅샷을 보게 한다. (커넥션 풀이 5개뿐이라
+ * 별도 클라이언트로 읽으면 진행 중인 정산마다 커넥션을 2개씩 잡아먹는다.)
  */
 export async function settleToday(user: CurrentUser, now: Date = new Date()): Promise<SettleResult> {
   const runDate = kstDate(now);
@@ -70,7 +72,7 @@ export async function settleToday(user: CurrentUser, now: Date = new Date()): Pr
     const titleIds = evaluateTitles({ taps: run.tapEvents, total: run.tapCount, firstTapAt: run.firstTapAt });
     const primaryTitleId = pickPrimary(titleIds);
 
-    const race = await getRaceToday(user, now);
+    const race = await getRaceToday(user, now, tx);
     const rank = race.racers.findIndex((r) => r.isMe) + 1;
     const rankTotal = race.racers.length;
 
