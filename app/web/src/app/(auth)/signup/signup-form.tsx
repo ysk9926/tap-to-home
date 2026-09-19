@@ -46,8 +46,7 @@ export function SignupForm() {
     setPending(false);
     if (error) {
       setErrors({
-        username:
-          error.code === "USERNAME_IS_ALREADY_TAKEN" ? "이미 쓰는 아이디예요" : (error.message ?? "가입에 실패했어요"),
+        username: error.code === "USERNAME_IS_ALREADY_TAKEN" ? "이미 쓰는 아이디예요" : "가입에 실패했어요",
       });
       return;
     }
