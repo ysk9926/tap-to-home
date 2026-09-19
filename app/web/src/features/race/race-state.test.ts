@@ -27,16 +27,16 @@ describe("withRacerCount", () => {
   };
 
   it("updates me, stage, and re-sorts", () => {
-    const next = withRacerCount(data, "me", 50);
-    expect(next.me.tapCount).toBe(50);
+    const next = withRacerCount(data, "me", 1600);
+    expect(next.me.tapCount).toBe(1600);
     expect(next.me.stage).toBe(1);
     expect(next.racers.map((r) => r.userId)).toEqual(["me", "f"]);
     expect(data.me.tapCount).toBe(3); // 원본 불변
   });
 
   it("updates a friend without touching me", () => {
-    const next = withRacerCount(data, "f", 100);
+    const next = withRacerCount(data, "f", 3500);
     expect(next.me.tapCount).toBe(3);
-    expect(next.racers[0]).toMatchObject({ userId: "f", tapCount: 100, stage: 2 });
+    expect(next.racers[0]).toMatchObject({ userId: "f", tapCount: 3500, stage: 2 });
   });
 });

@@ -15,10 +15,10 @@ function sumWhere(taps: TapSample[], pred: (t: TapSample) => boolean): number {
   return taps.reduce((acc, t) => acc + (pred(t) ? t.batchSize : 0), 0);
 }
 
-/** 17시 이후 이만큼 누르면 폭주형. 레이스 스케일(집 300번)의 3할 */
-export const SPRINT_TAPS = 90;
-/** 이 미만이면 버틸 만했던 날. 엘리베이터(45)에도 못 간 수준 */
-export const BEARABLE_UNDER = 30;
+/** 17시 이후 이만큼 누르면 폭주형. 레이스 스케일(집 10000번)의 3할 */
+export const SPRINT_TAPS = 3000;
+/** 이 미만이면 버틸 만했던 날. 엘리베이터(1500)에도 못 간 수준 */
+export const BEARABLE_UNDER = 1000;
 
 /** F3-1 규칙. 조건이 여러 개 맞으면 모두. 탭이 없는 날은 칭호 없음. 횟수 기준은 레이스 임계값(stages.ts)과 같은 스케일 */
 export function evaluateTitles({ taps, total, firstTapAt }: EvaluateInput): TitleId[] {
