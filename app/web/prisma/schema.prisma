@@ -15,15 +15,25 @@ datasource db {
 // https://www.better-auth.com/docs/concepts/database#core-schema
 
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id              String    @id
+  name            String
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  // username 플러그인 계약 (docs/decisions/0005)
+  username        String?   @unique
+  displayUsername String?
+  sessions        Session[]
+  accounts        Account[]
+
+  friendshipsRequested Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived  Friendship[] @relation("FriendshipAddressee")
+  dailyRuns            DailyRun[]
+  signalsSent          Signal[]     @relation("SignalSender")
+  signalsReceived      Signal[]     @relation("SignalReceiver")
+  titles               UserTitle[]
 
   @@map("user")
 }
@@ -73,4 +83,106 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// ───────────────────────────── friends ─────────────────────────────
+
+enum FriendshipStatus {
+  pending
+  accepted
+  blocked
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(accepted)
+  createdAt   DateTime         @default(now())
+  requester   User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+  @@map("friendship")
+}
+
+// ───────────────────────────── race ─────────────────────────────
+
+model DailyRun {
+  id         String       @id @default(uuid())
+  userId     String
+  runDate    DateTime     @db.Date
+  tapCount   Int          @default(0)
+  stage      Int          @default(0) @db.SmallInt
+  firstTapAt DateTime?
+  lastTapAt  DateTime?
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tapEvents  TapEvent[]
+  result     DailyResult?
+
+  @@unique([userId, runDate])
+  @@index([runDate])
+  @@map("daily_run")
+}
+
+model TapEvent {
+  id         BigInt   @id @default(autoincrement())
+  dailyRunId String
+  tappedAt   DateTime @default(now())
+  batchSize  Int      @db.SmallInt
+  dailyRun   DailyRun @relation(fields: [dailyRunId], references: [id], onDelete: Cascade)
+
+  @@index([dailyRunId])
+  @@map("tap_event")
+}
+
+// ───────────────────────────── signal ─────────────────────────────
+
+enum SignalLevel {
+  normal
+  strong
+  urgent
+  rescue
+}
+
+model Signal {
+  id         String      @id @default(uuid())
+  senderId   String
+  receiverId String
+  level      SignalLevel
+  sentAt     DateTime    @default(now())
+  readAt     DateTime?
+  sender     User        @relation("SignalSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User        @relation("SignalReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, sentAt])
+  @@index([senderId, receiverId, level, sentAt])
+  @@map("signal")
+}
+
+// ───────────────────────────── titles ─────────────────────────────
+// 칭호 정의는 src/features/titles/catalog.ts (docs/decisions/0005). titleId 는 FK 없는 text.
+
+model UserTitle {
+  userId        String
+  titleId       String
+  firstEarnedOn DateTime @db.Date
+  earnedCount   Int      @default(1)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, titleId])
+  @@map("user_title")
+}
+
+model DailyResult {
+  dailyRunId     String   @id
+  primaryTitleId String?
+  titleIds       String[]
+  rank           Int
+  rankTotal      Int
+  settledAt      DateTime @default(now())
+  dailyRun       DailyRun @relation(fields: [dailyRunId], references: [id], onDelete: Cascade)
+
+  @@map("daily_result")
 }
