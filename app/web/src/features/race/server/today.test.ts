@@ -15,7 +15,7 @@ beforeAll(async () => {
     createTestUser("friend"),
     createTestUser("stranger"),
   ]);
-  await prisma.friendship.create({ data: { requesterId: friend.id, addresseeId: me.id } });
+  await prisma.friendship.create({ data: { requesterId: friend.id, addresseeId: me.id, status: "accepted" } });
   await recordTaps(friend.id, 100, NOW);
   await recordTaps(stranger.id, 99, NOW);
 });

@@ -10,6 +10,13 @@ export function userChannel(userId: string): string {
 
 export const RACE_EVENT = "race";
 export const SIGNAL_EVENT = "signal";
+export const FRIEND_EVENT = "friend";
 
 export type RacePayload = { userId: string; date: string; tapCount: number; stage: number };
 export type SignalPayload = { id: string; senderName: string; level: SignalLevel; sentAt: string };
+/**
+ * 친구 관계가 바뀌었다는 알림 (F0-3). 상대 채널로 쏜다.
+ * `requested` 는 받는 쪽이 다이얼로그를 띄우는 신호, 나머지는 목록을 다시 불러오라는 신호다.
+ * 페이로드에 관계 데이터를 싣지 않고 refetch 로 맞춘다 — 목록 조회가 단일 진실이다.
+ */
+export type FriendPayload = { kind: "requested" | "accepted" | "removed"; actorName: string };

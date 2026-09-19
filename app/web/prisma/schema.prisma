@@ -30,6 +30,7 @@ model User {
 
   friendshipsRequested Friendship[] @relation("FriendshipRequester")
   friendshipsReceived  Friendship[] @relation("FriendshipAddressee")
+  friendshipsBlocked   Friendship[] @relation("FriendshipBlocker")
   dailyRuns            DailyRun[]
   signalsSent          Signal[]     @relation("SignalSender")
   signalsReceived      Signal[]     @relation("SignalReceiver")
@@ -97,13 +98,17 @@ model Friendship {
   id          String           @id @default(uuid())
   requesterId String
   addresseeId String
-  status      FriendshipStatus @default(accepted)
+  status      FriendshipStatus @default(pending)
+  blockedById String?
+  respondedAt DateTime?
   createdAt   DateTime         @default(now())
   requester   User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  blockedBy   User?            @relation("FriendshipBlocker", fields: [blockedById], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, addresseeId])
   @@index([addresseeId])
+  @@index([blockedById])
   @@map("friendship")
 }
 

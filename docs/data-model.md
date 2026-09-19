@@ -16,12 +16,16 @@ auth 테이블(`user`, `session`, `account`, `verification`)은 better-auth 계�
 | 컬럼 | 타입 | 비고 |
 | --- | --- | --- |
 | id | uuid pk | |
-| requesterId | text fk user | 등록한 쪽 |
-| addresseeId | text fk user | |
-| status | enum pending/accepted/blocked | 프로토타입은 항상 `accepted` 로 생성 |
+| requesterId | text fk user | 요청을 보낸 쪽 |
+| addresseeId | text fk user | 요청을 받은 쪽. 수락·거절 권한은 이쪽에만 |
+| status | enum pending/accepted/blocked | 기본 `pending`. 수락하면 `accepted` |
+| blockedById | text fk user null | `blocked` 일 때만 채운다. 해제 권한 판별용 |
+| respondedAt | timestamptz null | 수락·차단 시각 |
 | createdAt | timestamptz | |
 
-unique(requesterId, addresseeId). 양방향 조회는 두 컬럼 OR.
+unique(requesterId, addresseeId). 양방향 조회는 두 컬럼 OR — 친구 목록은 `status = accepted`,
+받은 요청은 `addresseeId = me AND status = pending`, 보낸 요청은 `requesterId = me AND status = pending`.
+`blocked` row 는 방향과 무관하게 검색·요청을 막는다.
 
 ## daily_run — 하루 단위 레이스 상태
 

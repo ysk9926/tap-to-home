@@ -14,7 +14,7 @@ let friend: { id: string };
 
 beforeAll(async () => {
   [me, friend] = await Promise.all([createTestUser("settle"), createTestUser("sf")]);
-  await prisma.friendship.create({ data: { requesterId: me.id, addresseeId: friend.id } });
+  await prisma.friendship.create({ data: { requesterId: me.id, addresseeId: friend.id, status: "accepted" } });
   await recordTaps(me.id, 1, MORNING);
   await recordTaps(me.id, 299, EVENING);
   await recordTaps(friend.id, 450, EVENING);

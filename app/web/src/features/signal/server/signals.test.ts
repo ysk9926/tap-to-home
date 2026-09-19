@@ -12,8 +12,8 @@ beforeAll(async () => {
   [s, r1, r2] = await Promise.all([createTestUser("sender"), createTestUser("r1"), createTestUser("r2")]);
   await prisma.friendship.createMany({
     data: [
-      { requesterId: s.id, addresseeId: r1.id },
-      { requesterId: r2.id, addresseeId: s.id },
+      { requesterId: s.id, addresseeId: r1.id, status: "accepted" },
+      { requesterId: r2.id, addresseeId: s.id, status: "accepted" },
     ],
   });
 });
