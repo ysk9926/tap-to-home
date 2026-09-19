@@ -16,18 +16,6 @@ export async function getCurrentUser(headers: Headers): Promise<CurrentUser | nu
   };
 }
 
-export class UnauthorizedError extends Error {
-  constructor() {
-    super("로그인이 필요해요");
-  }
-}
-
-export async function requireUser(headers: Headers): Promise<CurrentUser> {
-  const user = await getCurrentUser(headers);
-  if (!user) throw new UnauthorizedError();
-  return user;
-}
-
 /** 서버 컴포넌트(페이지)용. 세션이 없으면 /login 으로 보낸다 */
 export async function requirePageUser(): Promise<CurrentUser> {
   const user = await getCurrentUser(await headers());
