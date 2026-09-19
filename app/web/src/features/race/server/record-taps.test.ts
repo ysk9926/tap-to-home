@@ -47,5 +47,10 @@ describe("recordTaps", () => {
       data: { dailyRunId: run.id, titleIds: [], rank: 1, rankTotal: 1 },
     });
     await expect(recordTaps(userId, 1, NOW)).rejects.toBeInstanceOf(RunSettledError);
+
+    const afterRejected = await prisma.dailyRun.findUniqueOrThrow({
+      where: { userId_runDate: { userId, runDate: kstDate(NOW) } },
+    });
+    expect(afterRejected.tapCount).toBe(11); // 증가분이 롤백되어 그대로
   });
 });
