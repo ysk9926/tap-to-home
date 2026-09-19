@@ -13,9 +13,9 @@ type Options = {
   /**
    * connected 상태가 바뀔 때마다 호출된다 (subscribe() 콜백 안에서 직접 부르므로 useEffect
    * 본문 setState 가 아니라 react-hooks/set-state-in-effect 에 걸리지 않는다). 옵셔널 —
-   * 반환값 connected 만 읽어도 된다. RaceScreen 은 이 값으로 useRaceToday/useSignalToasts 의
+   * 반환값 connected 만 읽어도 된다. useRaceSession 은 이 값으로 useRaceToday/useSignalToasts 의
    * polling 여부를 결정하는데, 그 두 훅은 friendIds 의 재료인 data.racers 보다 먼저 호출돼야
-   * 해서 이 훅의 반환값을 되돌아 참조할 수 없다 — 그래서 RaceScreen 이 connected 를
+   * 해서 이 훅의 반환값을 되돌아 참조할 수 없다 — 그래서 useRaceSession 이 connected 를
    * useState 로 직접 소유하고 이 콜백으로 갱신받는다.
    */
   onConnectedChange?: (connected: boolean) => void;

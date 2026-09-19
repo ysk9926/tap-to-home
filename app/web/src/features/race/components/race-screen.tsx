@@ -2,46 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TapButton } from "@/components/tap-button";
-import { useRaceRealtime } from "@/features/realtime/hooks/use-race-realtime";
 import { COMBO_WINDOW_MS, createComboTracker } from "@/features/signal/combo";
 import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
-import { useSignalToasts } from "@/features/signal/hooks/use-signal-toasts";
 import { fetchJson } from "@/lib/fetch-json";
 import { kstDateLabel } from "@/lib/kst";
-import { RACE_TODAY_KEY, useRaceToday } from "../hooks/use-race-today";
+import { useRaceSession } from "../hooks/use-race-session";
 import { useTap } from "../hooks/use-tap";
-import { withRacerCount, type RaceToday } from "../race-state";
+import type { RaceToday } from "../race-state";
 import { stageOf } from "../stages";
-import { RaceLane } from "./race-lane";
 import { StageStrip } from "./stage-strip";
 
 export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; realtimeEnabled: boolean }) {
-  const queryClient = useQueryClient();
-  // useRaceRealtime 은 friendIds 를 data.racers 에서 뽑아야 해서 아래 두 훅(useRaceToday,
-  // useSignalToasts) 뒤에 호출된다. 그런데 그 두 훅의 polling 여부는 useRaceRealtime 의
-  // connected 결과가 필요하다 — 순서상 되돌아 참조할 수 없으므로, connected 는 여기서
-  // useState 로 소유하고 useRaceRealtime 에는 이를 갱신하는 setter 를 넘긴다. subscribe()
-  // 콜백(이벤트 핸들러)에서 직접 호출되므로 useEffect 본문 setState 가 아니라
-  // react-hooks/set-state-in-effect 에 걸리지 않는다.
-  const [connected, setConnected] = useState(false);
-  const { data } = useRaceToday(initial, { polling: !connected });
-  const { toasts, push } = useSignalToasts({ polling: !connected });
-
-  useRaceRealtime({
-    myId: initial.me.userId,
-    friendIds: data.racers.filter((r) => !r.isMe).map((r) => r.userId),
-    onRace: (p) => {
-      queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (cur) =>
-        cur && cur.date === p.date && p.userId !== cur.me.userId ? withRacerCount(cur, p.userId, p.tapCount) : cur,
-      );
-    },
-    onSignal: push,
-    enabled: realtimeEnabled,
-    onConnectedChange: setConnected,
-  });
+  const { data, toasts } = useRaceSession(initial, { realtimeEnabled });
 
   // 연타 감지: 탭마다 창을 다시 열고, 창이 닫히면 최고 등급 하나만 보낸다 (F2)
   // 트래커 자체는 리렌더를 유발할 필요가 없는 안정적인 싱글턴이라 setter 는 쓰지 않는다.
@@ -66,7 +40,8 @@ export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; r
 
   const { tap, frame } = useTap({ onTap });
   const me = data.me;
-  const friends = data.racers.filter((r) => !r.isMe);
+  const myRank = data.racers.findIndex((r) => r.isMe) + 1;
+  const friendCount = data.racers.length - 1;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -95,40 +70,23 @@ export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; r
         </p>
       </div>
 
-      <section className="mt-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <ScreenTitle className="text-[22px]">오늘의 퇴근 레이스</ScreenTitle>
-            <Note>누가 먼저 집에 갈까</Note>
-          </div>
-          <span className="inline-flex items-center gap-1.5 font-note text-[17px] text-pencil">
-            <i className="h-2 w-2 animate-pulse rounded-full bg-marker" />
-            {connected ? "실시간" : "2초마다 갱신"}
+      {/* 랭킹은 별도 탭이다 (F1-2) — 여기서는 한 줄로만 넘겨준다 */}
+      <Link
+        href={friendCount > 0 ? "/ranking" : "/friends"}
+        className="mt-6 flex items-center justify-between gap-2 border-t-[1.5px] border-dashed border-pencil-soft pt-3"
+      >
+        <span className="min-w-0">
+          <span className="block font-ui text-[22px] font-bold leading-tight">
+            {friendCount > 0 ? "친구들은 어디쯤?" : "같이 달릴 친구가 없어요"}
           </span>
-        </div>
-
-        {friends.length === 0 ? (
-          <Note className="mt-4">
-            아직 친구가 없어요.{" "}
-            <Link href="/friends" className="underline underline-offset-4">
-              아이디로 친구 등록하기
-            </Link>
-          </Note>
-        ) : (
-          <>
-            {data.racers.map((r, i) => (
-              <RaceLane
-                key={r.userId}
-                rank={i + 1}
-                name={r.name}
-                count={r.tapCount}
-                isMe={r.isMe}
-                frame={r.isMe ? frame : 0}
-              />
-            ))}
-          </>
-        )}
-      </section>
+          <span className="block font-note text-[19px] text-pencil">
+            {friendCount > 0 ? `나는 ${myRank}위` : "아이디로 친구 등록하기"}
+          </span>
+        </span>
+        <span className="shrink-0 whitespace-nowrap font-note text-xl text-pencil-soft underline underline-offset-4">
+          {friendCount > 0 ? "랭킹 →" : "친구 →"}
+        </span>
+      </Link>
 
       <SignalToastLayer toasts={toasts} />
     </div>

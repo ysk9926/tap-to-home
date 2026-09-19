@@ -15,9 +15,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // 받은 요청은 어느 화면에서든 다이얼로그로 떠야 해서 레이아웃에서 한 번 읽는다 (F0-3)
   const friends = await getFriendsState(user.id);
 
+  // h-dvh + overflow-hidden: 랭킹 화면(/ranking)이 내 레인을 고정하고 친구 목록만
+  // 스크롤하려면 컨테이너 높이가 뷰포트로 묶여 있어야 한다. 그래서 문서 스크롤 대신
+  // 아래 content wrapper 가 스크롤을 맡는다 — 긴 화면(도감·친구)은 여기서 스크롤되고,
+  // 랭킹은 스스로 overflow-hidden 을 걸어 내부 목록만 움직인다.
   return (
-    <Paper className="flex min-h-full flex-1 flex-col pb-20">
-      <div className="mx-auto flex w-full max-w-[420px] flex-1 flex-col px-3 pt-4">{children}</div>
+    <Paper className="flex h-dvh flex-col overflow-hidden pb-14">
+      <div className="mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-y-auto px-3 pb-6 pt-4">
+        {children}
+      </div>
       <BottomNav />
       <FriendRequestWatcher myId={user.id} initial={friends} realtimeEnabled={realtimeEnabled()} />
       <PushRegistrar />
