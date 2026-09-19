@@ -77,9 +77,17 @@ export async function addFriend(
   });
   if (existing) throw new FriendError("already", "이미 친구예요");
 
-  await prisma.friendship.create({
-    data: { requesterId: userId, addresseeId: target.id, status: "accepted" },
-  });
+  try {
+    await prisma.friendship.create({
+      data: { requesterId: userId, addresseeId: target.id, status: "accepted" },
+    });
+  } catch (e) {
+    // 동시 중복 등록: unique(requesterId, addresseeId) 위반은 "이미 친구" 로 처리한다
+    if (typeof e === "object" && e !== null && (e as { code?: unknown }).code === "P2002") {
+      throw new FriendError("already", "이미 친구예요");
+    }
+    throw e;
+  }
 
   const run = await prisma.dailyRun.findUnique({
     where: { userId_runDate: { userId: target.id, runDate: kstDate(now) } },

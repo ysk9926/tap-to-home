@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestUser, deleteTestUsers } from "../../../../test/db";
+import { prisma } from "@/lib/db";
 import { recordTaps } from "@/features/race/server/record-taps";
 import { FriendError, addFriend, listFriends, searchUser } from "./friends";
 
@@ -33,5 +34,10 @@ describe("friends", () => {
     await expect(addFriend(b.id, a.username, NOW)).rejects.toMatchObject({ code: "already" });
     await expect(addFriend(a.id, a.username, NOW)).rejects.toMatchObject({ code: "self" });
     await expect(addFriend(a.id, "nobody_here_xyz", NOW)).rejects.toBeInstanceOf(FriendError);
+  });
+
+  it("dedupes friend ids when both directions exist (concurrent registration race)", async () => {
+    await prisma.friendship.create({ data: { requesterId: b.id, addresseeId: a.id } });
+    expect((await listFriends(a.id, NOW)).map((f) => f.userId)).toEqual([b.id]);
   });
 });
