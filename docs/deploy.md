@@ -28,7 +28,7 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 | 변수 | Production | Preview |
 | --- | --- | --- |
 | `DATABASE_URL` | Supabase transaction pooler | 동일 (또는 브랜치용 별도 프로젝트) |
-| `DIRECT_URL` | 불필요 (빌드에서 마이그레이션 안 함. `postinstall` 의 `prisma generate` 는 DB 에 접속하지 않음) | 불필요 |
+| `DIRECT_URL` | 불필요 (빌드에서 마이그레이션 안 함. `build` 앞단의 `prisma generate` 는 DB 에 접속하지 않음) | 불필요 |
 | `BETTER_AUTH_SECRET` | 새로 생성 | Production 과 다른 값 |
 | `BETTER_AUTH_URL` | `https://<production-domain>` | 비움 → 코드가 `VERCEL_URL` 로 대체 |
 | `NEXT_PUBLIC_APP_URL` | `https://<production-domain>` | 비움 가능 |
@@ -36,6 +36,8 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 | `SUPABASE_SECRET_KEY` | Supabase 값 | 동일 |
 
 `vercel.json` 은 리전만 고정한다(`icn1`). 나머지는 대시보드 설정.
+
+Prisma 클라이언트는 `src/generated/prisma` 에 생성되고 커밋하지 않는다. Vercel 은 빌드 캐시로 `node_modules` 를 복원하면 설치를 건너뛰어 `postinstall` 이 돌지 않으므로, 생성은 `build` 스크립트 앞단(`prisma generate && next build`)에서 한다. `postinstall` 은 로컬 설치 편의를 위해 남겨둔다.
 
 ## 배포 후 확인
 
