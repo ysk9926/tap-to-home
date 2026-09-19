@@ -46,7 +46,7 @@ describe("createTapBatcher", () => {
     await vi.advanceTimersByTimeAsync(300);
     expect(b.pending()).toBe(2);
     b.tap();
-    await vi.advanceTimersByTimeAsync(300);
+    await vi.advanceTimersByTimeAsync(1000); // 첫 재시도는 1000ms 뒤
     expect(send).toHaveBeenLastCalledWith(3);
     expect(b.pending()).toBe(0);
   });
@@ -58,5 +58,37 @@ describe("createTapBatcher", () => {
     b.dispose();
     await vi.advanceTimersByTimeAsync(1000);
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("splits a queue over 50 into sequential chunks", async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    const b = createTapBatcher(send, { delayMs: 300 });
+    for (let i = 0; i < 120; i++) b.tap();
+    await vi.advanceTimersByTimeAsync(300);
+    await vi.advanceTimersByTimeAsync(0); // 성공 후 이어지는 flush 들의 마이크로태스크
+    expect(send).toHaveBeenNthCalledWith(1, 50);
+    expect(send).toHaveBeenNthCalledWith(2, 50);
+    expect(send).toHaveBeenNthCalledWith(3, 20);
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(b.pending()).toBe(0);
+  });
+
+  it("backs off on consecutive failures", async () => {
+    const send = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("net"))
+      .mockRejectedValueOnce(new Error("net"))
+      .mockResolvedValue(undefined);
+    const b = createTapBatcher(send, { delayMs: 300, retryDelaysMs: [1000, 2000, 5000] });
+    b.tap();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(send).toHaveBeenCalledTimes(1); // 1차 시도 실패
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(send).toHaveBeenCalledTimes(2); // +1000ms 뒤 2차 시도 실패
+
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(send).toHaveBeenCalledTimes(3); // +2000ms 뒤 3차 시도 성공
+    expect(b.pending()).toBe(0);
   });
 });

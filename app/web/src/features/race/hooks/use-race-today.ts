@@ -23,6 +23,7 @@ export function useRaceToday(initial: RaceToday, { polling }: { polling: boolean
       const fresh = await fetchJson<RaceToday>("/api/race/today");
       const prev = queryClient.getQueryData<RaceToday>(RACE_TODAY_KEY);
       if (!prev || prev.date !== fresh.date) return fresh;
+      if (fresh.settled) return fresh; // 마감 후에는 서버 값이 진실이다 (로컬 낙관값을 고정하지 않는다)
       if (prev.me.tapCount <= fresh.me.tapCount) return fresh;
       // 로컬이 앞서 있음: 내 카운트만 로컬 값으로 되돌린다
       const keepMine = (r: RaceToday["racers"][number]) =>

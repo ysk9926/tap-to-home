@@ -41,12 +41,18 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
         );
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) {
+          // 레이스가 이미 마감됨: settled 로 표시하고 서버 값으로 다시 동기화한다 (재시도하지 않는다)
           queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
             data ? { ...data, settled: true } : data,
           );
-          return; // 재시도하지 않는다
+          void queryClient.invalidateQueries({ queryKey: RACE_TODAY_KEY });
+          return;
         }
-        throw e; // batcher 가 다음 배치에 합친다
+        if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+          // 그 외 4xx(잘못된 요청, 인증 만료 등)는 재시도해도 성공할 수 없다: 이 배치는 버린다
+          return;
+        }
+        throw e; // 5xx·네트워크 오류: batcher 가 백오프 뒤 재큐잉한다
       }
     });
     batcherRef.current = batcher;
