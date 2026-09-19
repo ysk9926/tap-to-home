@@ -23,6 +23,7 @@ export function FriendsScreen({ me, initialFriends }: Props) {
   const friends = useQuery({
     queryKey: FRIENDS_KEY,
     initialData: initialFriends,
+    staleTime: 0,
     queryFn: () => fetchJson<{ friends: FriendSummary[] }>("/api/friends").then((r) => r.friends),
   });
 
