@@ -17,7 +17,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ```
 src/app/                 라우트. api/auth/[...all] 은 better-auth 핸들러
 src/app/providers.tsx    TanStack Query provider (클라이언트 경계)
-src/features/<domain>/   race | signal | titles — 도메인별 컴포넌트·훅·서버 로직
+src/features/<domain>/   race | signal | titles | friends — 도메인별 컴포넌트·훅·서버 로직
 src/components/          도메인 무관 공용 UI (줄노트·연필 스타일 프리미티브)
 src/lib/db/index.ts      Prisma 클라이언트 (@prisma/adapter-pg, DATABASE_URL)
 prisma/schema.prisma     모든 모델. 연결 URL 은 prisma.config.ts (DIRECT_URL)
@@ -26,6 +26,7 @@ src/generated/prisma/    prisma generate 산출물. git 에 넣지 않는다 (po
 src/lib/auth/server.ts   better-auth 서버 인스턴스. server 전용
 src/lib/auth/client.ts   better-auth React 클라이언트 (useSession 등)
 src/lib/supabase/        Realtime 전용. client.ts(publishable, 브라우저 구독) / server.ts(secret, 브로드캐스트)
+test/                    통합 테스트 (vitest + Postgres)
 ```
 
 ## 규칙
@@ -36,5 +37,6 @@ src/lib/supabase/        Realtime 전용. client.ts(publishable, 브라우저 �
 - 도메인 모델은 `prisma/schema.prisma` 에 `// ── <domain>` 구역으로 나눠 둔다. better-auth 모델(User/Session/Account/Verification)의 필드명은 better-auth 계약이므로 바꾸지 않는다.
 - 쿼리는 `import { prisma } from "@/lib/db"`. 생성 클라이언트 경로(`@/generated/prisma/client`)는 타입 import 에만 쓴다.
 - 버튼 연타가 핵심 인터랙션이므로 탭 핸들러는 낙관적 업데이트로 즉시 반응하고 서버 동기화는 배치한다 (`docs/decisions/0002-realtime.md`).
+- 서비스 함수(`features/*/server/`)는 route handler 와 서버 컴포넌트가 함께 쓴다. 통합 테스트는 서비스 함수를 직접 부른다.
 - 스타일은 Tailwind v4 + `globals.css` 의 테마 토큰. 임의 색상 값 대신 토큰(`bg-paper`, `text-pencil`, `border-marker`)을 쓴다.
 - UI 를 만들기 전에 `docs/design.md` 를 읽고 `src/components/` 의 프리미티브(MarkerBox, MarkerButton, TapButton, Stickman 등)를 쓴다. 새 프리미티브는 `/dev/ui` (개발 전용) 에 상태별로 올린다.

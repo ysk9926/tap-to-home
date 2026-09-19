@@ -12,3 +12,5 @@
 | [deploy.md](deploy.md) | Vercel + Supabase 설정, 환경 변수, 배포 후 확인 |
 | [design.md](design.md) | 줄노트·연필 낙서 UI 테마 방향 |
 | [decisions/](decisions/) | ADR. 0001 모노레포, 0002 실시간, 0003 ORM(Prisma), 0004 손그림 UI, 0005 아이디 로그인·칭호 카탈로그 |
+| [superpowers/specs](../docs/superpowers/specs) | 프로토타입 설계 스펙 |
+| [superpowers/plans](../docs/superpowers/plans) | 프로토타입 구현 계획 |

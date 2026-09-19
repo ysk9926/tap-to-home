@@ -40,8 +40,9 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 ## 배포 후 확인
 
 1. `https://<domain>/api/auth/ok` 가 200 → better-auth 기동.
-2. 회원가입 → Supabase Table Editor 의 `user` 에 행이 생김.
+2. 회원가입(아이디) → `user` 에 `username` 행.
 3. 두 브라우저에서 레이스 화면을 열고 탭 → 상대 화면 갱신 (Realtime 연결은 `docs/decisions/0002-realtime.md`).
+4. 친구 등록 → 두 브라우저 탭 → 토스트 → 오늘 정산 → 도감.
 
 ## Flutter 배포 빌드
 

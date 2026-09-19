@@ -6,7 +6,7 @@
 | 웹 | Next.js App Router, React, TypeScript | Next 16.3, React 19.2 | Vercel 배포 및 RSC. `app/web/AGENTS.md` 의 문서 안내 필수 |
 | 서버 상태 | TanStack Query | v5 | 레이스·랭킹 폴링/실시간 캐시, 낙관적 업데이트 |
 | 스타일 | Tailwind CSS | v4 | 테마 토큰은 `globals.css` `@theme` 에 정의 |
-| 인증 | better-auth | 1.7 | 자체 호스팅, 이메일+비밀번호로 개방형 로그인, Prisma 어댑터 |
+| 인증 | better-auth 1.7 (+ username 플러그인) | 1.7 | 아이디+비밀번호 개방형 로그인, Prisma 어댑터 |
 | DB | PostgreSQL (Supabase) | 17 | 로컬은 docker compose, 배포는 Supabase Postgres. 연결 규칙은 `deploy.md` |
 | 실시간 | Supabase Realtime (broadcast) | supabase-js 2 | 친구 위치 전파. Supabase Auth/RLS 는 사용 안 함 (`decisions/0002`) |
 | ORM | Prisma 7 + @prisma/adapter-pg | 7.10 | better-auth 공식 어댑터, `prisma/migrations` 에 SQL 이 남음. 연결 URL 은 `prisma.config.ts` (`decisions/0003`) |
@@ -22,6 +22,7 @@
 | --- | --- |
 | `DATABASE_URL` | 앱 런타임 연결 (Supabase 는 transaction pooler 6543) |
 | `DIRECT_URL` | prisma migrate 연결 (Supabase 는 session pooler 5432). `prisma.config.ts` 가 읽는다 |
+| `TEST_DATABASE_URL` | vitest 통합 테스트용 로컬 Postgres (기본 docker compose 값) |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 브라우저 Realtime 구독 |
 | `SUPABASE_SECRET_KEY` | 서버에서 채널 브로드캐스트. 서버 전용 |
 | `BETTER_AUTH_SECRET` | 세션 서명 키 (`openssl rand -base64 32`) |

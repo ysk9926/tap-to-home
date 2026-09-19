@@ -32,6 +32,7 @@ pnpm install            # 워크스페이스 전체
 pnpm db:up              # 로컬 PostgreSQL (docker compose). 기본 .env 는 Supabase 를 가리킴
 pnpm dev                # web 개발 서버 (http://localhost:3000)
 pnpm typecheck && pnpm lint
+pnpm test               # vitest (통합 테스트는 pnpm db:up 필요)
 pnpm mobile:run         # flutter run (WEB_URL 은 --dart-define 로 주입)
 ```
 
@@ -39,4 +40,4 @@ pnpm mobile:run         # flutter run (WEB_URL 은 --dart-define 로 주입)
 
 ## 완료 기준
 
-변경을 끝냈다고 말하기 전에 `pnpm typecheck` 와 `pnpm lint` 가 통과해야 한다. 스키마를 건드렸으면 `pnpm db:migrate` 가 만든 `prisma/migrations/*` 파일이 커밋에 포함돼야 한다. Flutter 를 건드렸으면 `flutter analyze` 가 통과해야 한다.
+변경을 끝냈다고 말하기 전에 `pnpm typecheck`, `pnpm lint`, `pnpm test` 가 통과해야 한다. 스키마를 건드렸으면 `pnpm db:migrate` 가 만든 `prisma/migrations/*` 파일이 커밋에 포함돼야 한다. Flutter 를 건드렸으면 `flutter analyze` 가 통과해야 한다.
