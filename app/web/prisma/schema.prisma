@@ -27,6 +27,9 @@ model User {
   displayUsername String?
   // 소프트 삭제 (2026-09-20). 조회 필터는 src/lib/db/active-user.ts 의 ACTIVE_USER 하나로 모은다
   deletedAt        DateTime?
+  suspendedAt      DateTime?
+  suspensionReason String?
+  analyticsExcluded Boolean @default(false)
   // 알림 수신 설정 (/my/profile). 인앱 토스트·진입 다이얼로그는 이 설정과 무관하다
   notifySignal     Boolean   @default(true)
   notifySettlement Boolean   @default(true)
@@ -41,6 +44,10 @@ model User {
   signalsReceived      Signal[]     @relation("SignalReceiver")
   titles               UserTitle[]
   pushTokens           PushToken[]
+  dailyActivity        UserDailyActivity[]
+  productEvents        ProductEvent[] @relation("ProductEventActor")
+  productEventsReceived ProductEvent[] @relation("ProductEventOther")
+  adminAuditLogs       AdminAuditLog[]
 
   @@map("user")
 }
@@ -219,4 +226,124 @@ model PushToken {
 
   @@index([userId])
   @@map("push_token")
+}
+
+// ───────────────────────────── admin auth (isolated better-auth) ─────────────────────────────
+
+model AdminUser {
+  id String @id
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  username String? @unique
+  displayUsername String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  disabledAt DateTime?
+  sessions AdminSession[]
+  accounts AdminAccount[]
+  auditLogs AdminAuditLog[]
+  @@map("admin_user")
+}
+
+model AdminSession {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("admin_session")
+}
+
+model AdminAccount {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  @@map("admin_account")
+}
+
+model AdminVerification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+  @@map("admin_verification")
+}
+
+model AdminLoginAttempt {
+  key String @id
+  windowStartedAt DateTime
+  count Int
+  @@map("admin_login_attempt")
+}
+
+model AdminAuditLog {
+  id String @id @default(uuid())
+  actorAdminId String
+  actor AdminUser @relation(fields: [actorAdminId], references: [id], onDelete: Restrict)
+  targetUserId String
+  target User @relation(fields: [targetUserId], references: [id], onDelete: Restrict)
+  action String
+  reason String
+  before Json
+  after Json
+  createdAt DateTime @default(now())
+  @@index([targetUserId, createdAt])
+  @@index([createdAt])
+  @@map("admin_audit_log")
+}
+
+// ───────────────────────────── product analytics ─────────────────────────────
+
+model AnalyticsConfig {
+  id String @id
+  startedAt DateTime @default(now())
+  @@map("analytics_config")
+}
+
+model UserDailyActivity {
+  userId String
+  activityDate DateTime @db.Date
+  firstSeenAt DateTime
+  lastSeenAt DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, activityDate])
+  @@index([activityDate, userId])
+  @@map("user_daily_activity")
+}
+
+model ProductEvent {
+  id String @id @default(uuid())
+  dedupeKey String? @unique
+  userId String
+  otherUserId String?
+  type String
+  entityId String
+  occurredAt DateTime @default(now())
+  user User @relation("ProductEventActor", fields: [userId], references: [id], onDelete: Cascade)
+  otherUser User? @relation("ProductEventOther", fields: [otherUserId], references: [id], onDelete: SetNull)
+  @@index([type, occurredAt])
+  @@index([userId, occurredAt])
+  @@map("product_event")
 }

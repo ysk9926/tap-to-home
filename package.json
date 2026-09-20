@@ -16,7 +16,9 @@
     "db:down": "docker compose down",
     "db:generate": "pnpm --filter web db:generate",
     "db:migrate": "pnpm --filter web db:migrate",
+    "db:deploy": "pnpm --filter web db:deploy",
     "db:studio": "pnpm --filter web db:studio",
+    "admin:master": "pnpm --filter web admin:master",
     "mobile:run": "cd app/mobile && flutter run"
   }
 }
