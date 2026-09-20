@@ -7,6 +7,7 @@ import {
   kstTimeLabel,
   runDateToYmd,
   todayKst,
+  yesterdayKstDate,
 } from "./kst";
 
 describe("kst", () => {
@@ -32,5 +33,18 @@ describe("kst", () => {
   it("labels", () => {
     expect(kstTimeLabel(new Date("2026-09-19T00:32:00Z"))).toBe("09:32");
     expect(kstDateLabel("2026-09-19")).toBe("9월 19일 토요일");
+  });
+});
+
+describe("yesterdayKstDate", () => {
+  it("returns the previous KST day at UTC midnight", () => {
+    // 2026-09-20 00:05 KST = 2026-09-19 15:05 UTC
+    const at = new Date("2026-09-19T15:05:00Z");
+    expect(yesterdayKstDate(at).toISOString()).toBe("2026-09-19T00:00:00.000Z");
+  });
+
+  it("does not cross a month boundary incorrectly", () => {
+    const at = new Date("2026-09-30T15:05:00Z"); // 10-01 00:05 KST
+    expect(yesterdayKstDate(at).toISOString()).toBe("2026-09-30T00:00:00.000Z");
   });
 });

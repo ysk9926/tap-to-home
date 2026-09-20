@@ -16,6 +16,12 @@ export function kstDate(now: Date = new Date()): Date {
   return new Date(`${todayKst(now)}T00:00:00.000Z`);
 }
 
+/** 어제의 KST 날짜를 `@db.Date` 값으로. 자정 직후 크론이 "어제" 를 정산할 때 쓴다 */
+export function yesterdayKstDate(now: Date = new Date()): Date {
+  const today = kstDate(now);
+  return new Date(today.getTime() - 24 * 60 * 60 * 1000);
+}
+
 /** `@db.Date` 로 읽은 값을 "YYYY-MM-DD" 로 */
 export function runDateToYmd(d: Date): string {
   return d.toISOString().slice(0, 10);
