@@ -1,6 +1,5 @@
 import { Note, ScreenTitle } from "@/components/paper";
 import { TitleBadge } from "@/components/title-badge";
-import { LogoutButton } from "@/features/auth/components/logout-button";
 import { getCollection } from "@/features/titles/server/collection";
 import { requirePageUser } from "@/lib/auth/current-user";
 
@@ -30,7 +29,6 @@ export default async function CollectionPage() {
           />
         ))}
       </div>
-      <LogoutButton username={user.username} />
     </div>
   );
 }

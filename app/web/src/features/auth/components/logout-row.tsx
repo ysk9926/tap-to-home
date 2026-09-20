@@ -8,10 +8,10 @@ import { useLiveSync } from "@/features/realtime/live-sync-context";
 import { signOut } from "@/lib/auth/client";
 
 /**
- * 도감 맨 아래의 로그아웃 (F0-5). 연타 중 잘못 눌러 레이스가 끊기지 않도록
+ * 마이페이지의 로그아웃 줄 (F0-5). 연타 중 잘못 눌러 레이스가 끊기지 않도록
  * 확인 다이얼로그를 한 번 거친다.
  */
-export function LogoutButton({ username }: { username: string }) {
+export function LogoutRow() {
   const router = useRouter();
   const { endSession } = useLiveSync();
   const [asking, setAsking] = useState(false);
@@ -37,13 +37,15 @@ export function LogoutButton({ username }: { username: string }) {
   }
 
   return (
-    <div className="mt-8 border-t-[1.5px] border-pencil-soft pt-4 text-center">
-      <p className="font-note text-base text-pencil-soft">
-        {username ? `@${username} 로 로그인 중` : "로그인 중"}
-      </p>
-      <MarkerButton variant="ghost" size="sm" className="mt-2" onClick={() => setAsking(true)}>
+    <>
+      <button
+        type="button"
+        onClick={() => setAsking(true)}
+        className="flex w-full items-center justify-between border-b-[1.5px] border-dashed border-pencil-soft py-3.5 text-left font-ui text-xl font-bold"
+      >
         로그아웃
-      </MarkerButton>
+        <span className="font-note text-lg text-pencil-soft">→</span>
+      </button>
 
       <MarkerDialog
         open={asking}
@@ -69,6 +71,6 @@ export function LogoutButton({ username }: { username: string }) {
           </p>
         )}
       </MarkerDialog>
-    </div>
+    </>
   );
 }

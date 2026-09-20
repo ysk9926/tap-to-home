@@ -83,7 +83,7 @@ it("owns one friends query and preserves the own channel across app routes", asy
   expect(count("/api/friends")).toBe(0);
   expect(client.getQueryCache().find({ queryKey: friendsKey("me") })?.getObserversCount()).toBe(1);
   await connect();
-  for (const path of ["/ranking", "/friends", "/collection"]) {
+  for (const path of ["/ranking", "/friends", "/my/collection"]) {
     navigation.path = path; view.rerender(<App />); await tick();
   }
   expect(sdk.joins.get("u:me")).toBe(1);
@@ -251,7 +251,7 @@ it("applies settlement immediately and never restores a previous day's optimisti
   expect(screen.getByTestId("race").textContent).toContain("2026-09-21:0:false");
 });
 
-it.each(["/friends", "/today", "/collection"])("does not query the full race on %s", async (path) => {
+it.each(["/friends", "/today", "/my/collection"])("does not query the full race on %s", async (path) => {
   navigation.path = path;
   render(<App />); await connect(); requests = [];
   for (let minute = 0; minute < 5; minute++) await tick(60_000);
