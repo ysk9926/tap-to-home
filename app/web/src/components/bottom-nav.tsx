@@ -8,8 +8,7 @@ const ITEMS = [
   { href: "/", label: "레이스" },
   { href: "/ranking", label: "랭킹" },
   { href: "/friends", label: "친구" },
-  { href: "/today", label: "오늘" },
-  { href: "/collection", label: "도감" },
+  { href: "/my", label: "마이" },
 ] as const;
 
 /** 하단 탭. 활성 탭은 매직 밑줄. 형광펜은 화면 본문에 양보한다 */
@@ -21,9 +20,10 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-marker bg-paper"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="mx-auto grid h-14 max-w-[420px] grid-cols-5">
+      <ul className="mx-auto grid h-14 max-w-[420px] grid-cols-4">
         {ITEMS.map((item) => {
-          const active = pathname === item.href;
+          // 마이페이지는 하위 화면(/my/profile 등)에서도 탭이 눌린 상태로 보여야 한다
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <li key={item.href} className="grid place-items-center">
               <Link

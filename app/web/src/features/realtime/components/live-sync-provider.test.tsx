@@ -251,7 +251,7 @@ it("applies settlement immediately and never restores a previous day's optimisti
   expect(screen.getByTestId("race").textContent).toContain("2026-09-21:0:false");
 });
 
-it.each(["/friends", "/today", "/my/collection"])("does not query the full race on %s", async (path) => {
+it.each(["/friends", "/records", "/my/collection"])("does not query the full race on %s", async (path) => {
   navigation.path = path;
   render(<App />); await connect(); requests = [];
   for (let minute = 0; minute < 5; minute++) await tick(60_000);

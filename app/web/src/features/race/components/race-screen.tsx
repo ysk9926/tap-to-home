@@ -59,14 +59,14 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
       <div className="mt-3 flex flex-col items-center">
         <TapButton onTap={tap} disabled={data.settled} />
         <p className="mt-2 font-note text-[19px] text-pencil-soft">
-          {data.settled ? (
-            <Link href="/today" className="underline underline-offset-4">
-              오늘은 정산했어요 · 결과 보기
-            </Link>
-          ) : (
-            "꾹꾹 누르면 한 칸씩 간다"
-          )}
+          {data.settled ? "오늘은 정산했어요" : "꾹꾹 누르면 한 칸씩 간다"}
         </p>
+        <Link
+          href="/records"
+          className="mt-3 font-note text-lg text-pencil underline underline-offset-4"
+        >
+          기록 보기
+        </Link>
       </div>
 
       {/* 랭킹은 별도 탭이다 (F1-2) — 여기서는 한 줄로만 넘겨준다 */}
