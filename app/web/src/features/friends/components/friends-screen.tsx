@@ -8,22 +8,21 @@ import { TextField } from "@/components/text-field";
 import { ApiError, fetchJson } from "@/lib/fetch-json";
 import { useMutation } from "@tanstack/react-query";
 import { useFriendActions } from "../hooks/use-friend-actions";
-import { useFriends, type FriendsState } from "../hooks/use-friends";
+import { useLiveSync } from "@/features/realtime/live-sync-context";
 import { ConfirmFriendDialog, type PendingConfirm } from "./confirm-friend-dialog";
 import type { FoundUser } from "../server/friends";
 
-type Props = { me: { name: string; username: string }; initialFriends: FriendsState };
+type Props = { me: { name: string; username: string } };
 
-export function FriendsScreen({ me, initialFriends }: Props) {
+export function FriendsScreen({ me }: Props) {
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<FoundUser | null | undefined>(undefined); // undefined = 검색 전
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null);
 
-  // 이 화면은 항상 폴링한다 — 레이스 화면과 달리 Realtime 연결 여부를 알지 못한다
-  const state = useFriends(initialFriends, { polling: true });
-  const { request, respond, remove, block, unblock } = useFriendActions();
-  const { friends, incoming, outgoing, blocked } = state.data;
+  const { userId, friends: state } = useLiveSync();
+  const { request, respond, remove, block, unblock } = useFriendActions(userId);
+  const { friends, incoming, outgoing, blocked } = state;
 
   const fail = (e: unknown, fallback: string) =>
     setMessage(e instanceof ApiError ? e.message : fallback);

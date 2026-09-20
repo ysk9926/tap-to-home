@@ -1,12 +1,14 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 
 const src = fileURLToPath(new URL("./src", import.meta.url));
 const serverOnlyStub = fileURLToPath(new URL("./test/server-only-stub.ts", import.meta.url));
 
 export default defineConfig({
+  plugins: [react()],
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     environment: "node",
     setupFiles: ["./test/setup.ts"],
     // 통합 테스트가 같은 DB 를 쓰므로 파일 간 병렬 실행을 끈다

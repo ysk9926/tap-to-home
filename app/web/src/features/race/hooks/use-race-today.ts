@@ -1,34 +1,39 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/fetch-json";
-import type { RaceToday } from "../race-state";
+import { raceTodayKey } from "@/features/realtime/query-keys";
+import { retrySyncQuery, type QueryPolicy } from "@/features/realtime/sync-policy";
+import { useSyncPolling } from "@/features/realtime/hooks/use-sync-polling";
+import { mergeRaceSnapshot, selectRaceInitial, type RaceToday } from "../race-state";
 
-export const RACE_TODAY_KEY = ["race", "today"] as const;
-export const RACE_POLL_MS = 2000;
-
-/**
- * 오늘 레이스 상태. polling=true 면 2초마다 refetch (Realtime 연결 전 B 안).
- * 서버 값이 낙관적 로컬 카운트보다 작으면(아직 배치 전송 전) 로컬 값을 유지한다.
- */
-export function useRaceToday(initial: RaceToday, { polling }: { polling: boolean }) {
-  const queryClient = useQueryClient();
-  return useQuery({
-    queryKey: RACE_TODAY_KEY,
+export function useRaceToday(userId: string, initial: RaceToday, policy: QueryPolicy) {
+  const client = useQueryClient();
+  const query = useQuery({
+    queryKey: raceTodayKey(userId),
     initialData: initial,
-    staleTime: 0,
-    refetchInterval: polling ? RACE_POLL_MS : false,
-    refetchOnWindowFocus: true,
-    queryFn: async () => {
-      const fresh = await fetchJson<RaceToday>("/api/race/today");
-      const prev = queryClient.getQueryData<RaceToday>(RACE_TODAY_KEY);
-      if (!prev || prev.date !== fresh.date) return fresh;
-      if (fresh.settled) return fresh; // 마감 후에는 서버 값이 진실이다 (로컬 낙관값을 고정하지 않는다)
-      if (prev.me.tapCount <= fresh.me.tapCount) return fresh;
-      // 로컬이 앞서 있음: 내 카운트만 로컬 값으로 되돌린다
-      const keepMine = (r: RaceToday["racers"][number]) =>
-        r.isMe ? { ...r, tapCount: prev.me.tapCount, stage: prev.me.stage } : r;
-      return { ...fresh, me: keepMine(fresh.me), racers: fresh.racers.map(keepMine) };
+    ...policy,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchIntervalInBackground: false,
+    retry: retrySyncQuery,
+    queryFn: async ({ signal }) => {
+      const fresh = await fetchJson<RaceToday>("/api/race/today", { signal });
+      const prev = client.getQueryData<RaceToday>(raceTodayKey(userId));
+      return mergeRaceSnapshot(prev, fresh);
     },
   });
+  useSyncPolling(policy, query.refetch);
+
+  useEffect(() => {
+    const current = client.getQueryData<RaceToday>(raceTodayKey(userId));
+    if (!current || selectRaceInitial(current, initial) !== current) {
+      client.setQueryData(raceTodayKey(userId), initial);
+    }
+  }, [client, userId, initial]);
+
+  // 정산 직후 첫 렌더부터 버튼을 잠근다. 캐시 반영 effect까지 기다리지 않는다.
+  return { ...query, data: selectRaceInitial(query.data, initial) };
 }

@@ -4,22 +4,18 @@ import { useState } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { MarkerDialog } from "@/components/marker-dialog";
 import { Note } from "@/components/paper";
-import { useFriendRealtime } from "../hooks/use-friend-realtime";
 import { useFriendActions } from "../hooks/use-friend-actions";
-import { useFriends, type FriendsState } from "../hooks/use-friends";
-
-type Props = { myId: string; initial: FriendsState; realtimeEnabled: boolean };
+import { useLiveSync } from "@/features/realtime/live-sync-context";
 
 /**
  * 앱 어디에 있든 받은 친구 요청을 다이얼로그로 띄운다 (F0-3). 한 번에 한 건씩 —
  * 여러 건이면 처리할 때마다 다음 요청이 올라온다. 닫으면 이 세션에서는 다시 띄우지 않고
  * `/friends` 목록에서 처리하게 둔다.
  */
-export function FriendRequestWatcher({ myId, initial, realtimeEnabled }: Props) {
+export function FriendRequestWatcher() {
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const connected = useFriendRealtime({ myId, enabled: realtimeEnabled });
-  const { data } = useFriends(initial, { polling: !connected });
-  const { respond } = useFriendActions();
+  const { userId, friends: data } = useLiveSync();
+  const { respond } = useFriendActions(userId);
 
   // 처리·닫기 한 요청은 건너뛰고 다음 요청을 올린다. 사라진 id 가 dismissed 에 남아도
   // 무해하므로(같은 id 가 다시 생기지 않는다) 정리 effect 를 두지 않는다.

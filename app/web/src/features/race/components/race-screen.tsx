@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TapButton } from "@/components/tap-button";
 import { COMBO_WINDOW_MS, createComboTracker } from "@/features/signal/combo";
-import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
 import { fetchJson } from "@/lib/fetch-json";
 import { kstDateLabel } from "@/lib/kst";
 import { useRaceSession } from "../hooks/use-race-session";
@@ -14,8 +13,8 @@ import type { RaceToday } from "../race-state";
 import { stageOf } from "../stages";
 import { StageStrip } from "./stage-strip";
 
-export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; realtimeEnabled: boolean }) {
-  const { data, toasts } = useRaceSession(initial, { realtimeEnabled });
+export function RaceScreen({ initial }: { initial: RaceToday }) {
+  const { data } = useRaceSession(initial);
 
   // 연타 감지: 탭마다 창을 다시 열고, 창이 닫히면 최고 등급 하나만 보낸다 (F2)
   // 트래커 자체는 리렌더를 유발할 필요가 없는 안정적인 싱글턴이라 setter 는 쓰지 않는다.
@@ -38,7 +37,7 @@ export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; r
     if (comboTimer.current) clearTimeout(comboTimer.current);
   }, []);
 
-  const { tap, frame } = useTap({ onTap });
+  const { tap, frame } = useTap({ userId: initial.me.userId, onTap });
   const me = data.me;
   const myRank = data.racers.findIndex((r) => r.isMe) + 1;
   const friendCount = data.racers.length - 1;
@@ -88,7 +87,6 @@ export function RaceScreen({ initial, realtimeEnabled }: { initial: RaceToday; r
         </span>
       </Link>
 
-      <SignalToastLayer toasts={toasts} />
     </div>
   );
 }

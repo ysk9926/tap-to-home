@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Note, ScreenTitle } from "@/components/paper";
-import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
 import { useRaceSession } from "../hooks/use-race-session";
 import type { RaceToday } from "../race-state";
 import { RaceLane } from "./race-lane";
@@ -11,8 +10,8 @@ import { RaceLane } from "./race-lane";
  * 오늘의 퇴근 레이스 랭킹 (F1-2). 내 레인은 상단에 고정하고 친구 레인만 스크롤한다 —
  * 친구가 몇 명이든 내 순위가 화면에서 밀려나지 않게. 탭 버튼은 `/` 에만 있다.
  */
-export function RankingScreen({ initial, realtimeEnabled }: { initial: RaceToday; realtimeEnabled: boolean }) {
-  const { data, connected, toasts } = useRaceSession(initial, { realtimeEnabled });
+export function RankingScreen({ initial }: { initial: RaceToday }) {
+  const { data, connected } = useRaceSession(initial);
   const myRank = data.racers.findIndex((r) => r.isMe) + 1;
   const friends = data.racers.filter((r) => !r.isMe);
 
@@ -56,7 +55,6 @@ export function RankingScreen({ initial, realtimeEnabled }: { initial: RaceToday
         </div>
       )}
 
-      <SignalToastLayer toasts={toasts} />
     </div>
   );
 }

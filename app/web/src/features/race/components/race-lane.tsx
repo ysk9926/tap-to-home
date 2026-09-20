@@ -2,12 +2,12 @@ import { CrownIcon, HouseIcon } from "@/components/icons";
 import { SpeechBubble } from "@/components/speech-bubble";
 import { Stickman } from "@/components/stickman";
 import { cn } from "@/lib/cn";
-import { STAGES, progressOf, stageOf } from "../stages";
+import { STAGES, poseOf, stageOf } from "../stages";
 import { StageLandmark } from "./stage-landmark";
+import { RACER_SIZE, trackPositionOf } from "./track-layout";
 
 /**
- * 트랙 위 눈금. 양 끝은 뺀다 — 자리(0%)는 졸라맨 출발점이라 이름 칸과 겹치고,
- * 집(100%)은 레인 오른쪽 칸의 HouseIcon 이 이미 보여준다.
+ * 자리 가구는 출발점에 따로 그리고, 집은 레인 오른쪽 칸의 HouseIcon 이 보여준다.
  */
 const TICK_STAGES = STAGES.filter((s) => s.key !== "seat" && s.key !== "home");
 
@@ -41,7 +41,7 @@ export function RaceLane({
   className,
 }: RaceLaneProps) {
   const stage = stageOf(count);
-  const pct = inactive ? 1 : progressOf(count);
+  const position = trackPositionOf(inactive ? 0 : count);
 
   return (
     <div
@@ -67,6 +67,11 @@ export function RaceLane({
 
       <div className="relative h-[64px]">
         <div className="absolute inset-x-0 bottom-[5px] border-t-[1.5px] border-dashed border-pencil-soft opacity-55" />
+        <StageLandmark
+          stage="seat"
+          size={RACER_SIZE}
+          className="absolute bottom-1.5 left-0 text-pencil-soft opacity-70"
+        />
         {TICK_STAGES.map((s) => (
           <StageLandmark
             key={s.key}
@@ -76,24 +81,24 @@ export function RaceLane({
               "absolute bottom-[5px] -translate-x-1/2 text-pencil-soft",
               count >= s.threshold ? "opacity-70" : "opacity-40",
             )}
-            style={{ left: `${progressOf(s.threshold)}%` }}
+            style={{ left: trackPositionOf(s.threshold) }}
           />
         ))}
         {bubble && (
           <div
             className="absolute bottom-[52px] -translate-x-[30%]"
-            style={{ left: `${pct}%` }}
+            style={{ left: position }}
           >
             <SpeechBubble>{bubble}</SpeechBubble>
           </div>
         )}
         <div
           className="absolute bottom-1.5 -translate-x-1/2 transition-[left] duration-300 ease-[steps(3)]"
-          style={{ left: `${pct}%` }}
+          style={{ left: position }}
         >
           <Stickman
-            pose={inactive ? "stand" : stage.pose}
-            size={40}
+            pose={inactive ? "stand" : poseOf(count)}
+            size={RACER_SIZE}
             frame={frame}
             className={cn(inactive && "opacity-35")}
           />

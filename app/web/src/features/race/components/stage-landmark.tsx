@@ -5,7 +5,7 @@ import type { StageKey } from "../stages";
 
 type StageLandmarkProps = {
   stage: StageKey;
-  /** 한 변(px). 정방형. 기본 30 */
+  /** 높이(px). 자리는 캐릭터와 맞추는 64×60 비율, 나머지는 정방형. 기본 30 */
   size?: number;
   className?: string;
   style?: CSSProperties;
@@ -23,9 +23,9 @@ export function StageLandmark({ stage, size = 30, className, style }: StageLandm
   }
   return (
     <svg
-      width={size}
+      width={stage === "seat" ? size * (64 / 60) : size}
       height={size}
-      viewBox="0 0 40 40"
+      viewBox={stage === "seat" ? "0 0 64 60" : "0 0 40 40"}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.7"
@@ -41,12 +41,13 @@ export function StageLandmark({ stage, size = 30, className, style }: StageLandm
 }
 
 const LANDMARKS: Record<Exclude<StageKey, "home">, ReactNode> = {
-  /* 자리: 책상 위 모니터. 상판이 살짝 휘고 다리는 조금 기울었다 */
+  /* 자리: Stickman sit 과 같은 원점·축척. 엉덩이(17,34) 바로 아래 좌판과 뒤쪽 등받이. */
   seat: (
     <>
-      <path d="M2.5 26 Q20 24.6 37.5 25.6 M6.5 26.4 L5.8 39 M33.5 25.8 L34.2 39" />
-      <path d="M12.5 11.5 Q21.5 10.6 30 11.4 L30.4 21.8 Q21.5 22.5 12.9 21.9 Z M21.6 22.4 L21.4 25.4" />
-      <path d="M16.5 15 Q19.5 14.6 24.5 15 M16.5 18.2 Q18.5 18 21.5 18.2" opacity=".55" />
+      <path d="M7 22 Q5.5 28 8 35 M8 35 Q16 36 25 35 M16 36 L16 52 M8 55 Q16 50 23 55" />
+      <path d="M30 31 Q45 30 62 31 M34 32 L33 56 M59 32 L60 56" />
+      <path d="M43 13 Q51 12 60 13 L60 25 Q51 26 43 25 Z M51 26 L51 30" />
+      <path d="M46 17 L56 17 M46 21 L52 21 M33 30 L40 30" opacity=".55" />
     </>
   ),
   /* 엘리베이터: 문틀과 가운데 틈, 위에 ▲ 표시, 옆에 호출 버튼 */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { stageIndexOf } from "./stages";
-import { sortRacers, withRacerCount, type RaceToday, type Racer } from "./race-state";
+import { mergeRaceSnapshot, selectRaceInitial, sortRacers, withRacerCount, type RaceToday, type Racer } from "./race-state";
 
 const racer = (userId: string, tapCount: number, isMe = false): Racer => ({
   userId,
@@ -9,6 +9,32 @@ const racer = (userId: string, tapCount: number, isMe = false): Racer => ({
   tapCount,
   stage: stageIndexOf(tapCount),
   isMe,
+});
+
+describe("race snapshot reconciliation", () => {
+  const current: RaceToday = { date: "2026-09-20", me: racer("me", 120, true), racers: [racer("me", 120, true), racer("friend", 50)], settled: false };
+  const fresh: RaceToday = { date: "2026-09-20", me: racer("me", 100, true), racers: [racer("me", 100, true), racer("friend", 40)], settled: false };
+
+  it("keeps optimistic taps and newer friend broadcasts while respecting server membership", () => {
+    const merged = mergeRaceSnapshot(current, fresh);
+    expect(merged.me.tapCount).toBe(120);
+    expect(merged.racers.find((entry) => entry.userId === "friend")?.tapCount).toBe(50);
+    expect(mergeRaceSnapshot(current, { ...fresh, racers: [fresh.me] }).racers).toHaveLength(1);
+  });
+  it("uses a new day or settled server snapshot and ignores delayed previous days", () => {
+    const settled = { ...fresh, settled: true };
+    const next = { ...fresh, date: "2026-09-21", me: racer("me", 0, true), racers: [racer("me", 0, true)] };
+    expect(mergeRaceSnapshot(current, settled)).toEqual(settled);
+    expect(mergeRaceSnapshot(current, next)).toEqual(next);
+    expect(mergeRaceSnapshot(next, current)).toBe(next);
+    expect(mergeRaceSnapshot(settled, fresh)).toBe(settled);
+  });
+  it("only replaces cached data with a newly authoritative initial snapshot", () => {
+    expect(selectRaceInitial(current, fresh)).toBe(current);
+    expect(selectRaceInitial(current, { ...fresh, settled: true }).settled).toBe(true);
+    expect(selectRaceInitial(current, { ...fresh, date: "2026-09-21" }).date).toBe("2026-09-21");
+    expect(selectRaceInitial(current, { ...fresh, date: "2026-09-19", settled: true })).toBe(current);
+  });
 });
 
 describe("sortRacers", () => {

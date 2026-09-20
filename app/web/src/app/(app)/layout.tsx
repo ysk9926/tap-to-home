@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { LiveSyncProvider } from "@/features/realtime/components/live-sync-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { Paper } from "@/components/paper";
 import { FriendRequestWatcher } from "@/features/friends/components/friend-request-watcher";
@@ -20,13 +21,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // 아래 content wrapper 가 스크롤을 맡는다 — 긴 화면(도감·친구)은 여기서 스크롤되고,
   // 랭킹은 스스로 overflow-hidden 을 걸어 내부 목록만 움직인다.
   return (
-    <Paper className="flex h-dvh flex-col overflow-hidden pb-14">
-      <div className="mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-y-auto px-3 pb-6 pt-4">
-        {children}
-      </div>
-      <BottomNav />
-      <FriendRequestWatcher myId={user.id} initial={friends} realtimeEnabled={realtimeEnabled()} />
-      <PushRegistrar />
-    </Paper>
+    <LiveSyncProvider key={user.id} userId={user.id} initialFriends={friends} realtimeEnabled={realtimeEnabled()}>
+      <Paper className="flex h-dvh flex-col overflow-hidden pb-14">
+        <div className="mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-y-auto px-3 pb-6 pt-4">
+          {children}
+        </div>
+        <BottomNav />
+        <FriendRequestWatcher />
+        <PushRegistrar />
+      </Paper>
+    </LiveSyncProvider>
   );
 }

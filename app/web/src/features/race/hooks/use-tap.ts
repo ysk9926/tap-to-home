@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, fetchJson } from "@/lib/fetch-json";
 import { withRacerCount, type RaceToday } from "../race-state";
 import { createTapBatcher, type TapBatcher } from "../tap-batcher";
-import { RACE_TODAY_KEY } from "./use-race-today";
+import { raceTodayKey } from "@/features/realtime/query-keys";
 
 type TapResponse = { tapCount: number; stage: number };
 
@@ -19,7 +19,7 @@ type TapResponse = { tapCount: number; stage: number };
  * 언마운트 때 dispose 된 인스턴스가 그대로 남아 이후 탭이 전송되지 않는다. effect 안에서
  * 만들면 시뮬레이션 재마운트 때 새 effect 가 다시 실행되어 새 배치기가 생긴다.
  */
-export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
+export function useTap({ userId, onTap }: { userId: string; onTap?: (at: number) => void }) {
   const queryClient = useQueryClient();
   const [frame, setFrame] = useState<0 | 1>(0);
   const onTapRef = useRef(onTap);
@@ -36,16 +36,16 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
           method: "POST",
           body: JSON.stringify({ count }),
         });
-        queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
+        queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
           data ? withRacerCount(data, data.me.userId, res.tapCount + batcher.pending()) : data,
         );
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) {
           // 레이스가 이미 마감됨: settled 로 표시하고 서버 값으로 다시 동기화한다 (재시도하지 않는다)
-          queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
+          queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
             data ? { ...data, settled: true } : data,
           );
-          void queryClient.invalidateQueries({ queryKey: RACE_TODAY_KEY });
+          void queryClient.invalidateQueries({ queryKey: raceTodayKey(userId) });
           return;
         }
         if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
@@ -61,17 +61,17 @@ export function useTap({ onTap }: { onTap?: (at: number) => void } = {}) {
       void batcher.flush(); // 언마운트 직전에 쌓인 탭은 보낸다
       batcher.dispose();
     };
-  }, [queryClient]);
+  }, [queryClient, userId]);
 
   const tap = useCallback(() => {
     const at = Date.now();
     setFrame((f) => (f === 0 ? 1 : 0));
-    queryClient.setQueryData<RaceToday>(RACE_TODAY_KEY, (data) =>
+    queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
       data && !data.settled ? withRacerCount(data, data.me.userId, data.me.tapCount + 1) : data,
     );
     batcherRef.current?.tap();
     onTapRef.current?.(at);
-  }, [queryClient]);
+  }, [queryClient, userId]);
 
   return { tap, frame };
 }

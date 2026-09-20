@@ -60,7 +60,9 @@
 | `TextField` | 밑줄 입력칸. label, hint, error |
 | `BottomNav` | 하단 탭 4개. 활성 탭은 매직 밑줄 |
 
-레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`), `StageLandmark` 가 단계별 손그림 표지(40×40 viewBox, 바닥선 y≈39 가 트랙에 닿음, 연필 1.7px, 집만 `HouseIcon`), `StageStrip` 이 메인 진행 바(높이 96px = 줄노트 세 칸, 트랙 위 랜드마크 + 아래 이름표), `RaceLane` + `StageTicks` 가 친구 레이스 한 줄(눈금은 글자 대신 size 20 랜드마크). 레인 높이 64px = 줄노트 두 칸.
+레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`, `poseOf`), `StageLandmark` 가 단계별 손그림 표지(기본 40×40 viewBox, 연필 1.7px, 집만 `HouseIcon`), `StageStrip` 이 메인 진행 바(높이 96px = 줄노트 세 칸, 트랙 위 랜드마크 + 아래 이름표), `RaceLane` 이 친구 레이스 한 줄을 그린다. 레인 높이 64px = 줄노트 두 칸.
+
+자리의 책상·모니터·의자는 64×60 viewBox 로 그린 고정 랜드마크다. 캐릭터와 같은 높이 40px·원점으로 배치해 엉덩이(17,34) 바로 아래에 의자 좌판(y≈35)이 닿고, 등 뒤에 등받이가 보인다. `Stickman` 은 사람만 그리며, 0회에만 앉고 첫 탭부터 걷는다. `track-layout.ts` 가 가구 공간을 확보하고 의자에서 엘리베이터까지의 이동 좌표를 메인·랭킹에 공통으로 적용한다. `/dev/ui` 의 버튼 데모에서 0회·이동 중·엘리베이터 도착과 전체 구간을 확인한다.
 
 ## 규칙
 

@@ -16,12 +16,12 @@ function useTapCounter(initial: number) {
     setCount((c) => c + 1);
     setFrame((f) => (f === 0 ? 1 : 0));
   };
-  return { count, frame, tap, reset: () => setCount(initial) };
+  return { count, frame, tap, setCount, reset: () => setCount(initial) };
 }
 
 /** 메인 버튼 + 진행 바가 실제로 연동되는 데모 */
 export function TapDemo() {
-  const { count, frame, tap, reset } = useTapCounter(23);
+  const { count, frame, tap, setCount, reset } = useTapCounter(0);
   const [done, setDone] = useState(false);
   return (
     <div className="flex flex-wrap items-start gap-8">
@@ -40,9 +40,27 @@ export function TapDemo() {
           </span>
         </div>
         <StageStrip count={count} frame={frame} className="mt-4" />
-        <div className="mt-4 flex gap-2">
+        <RaceLane rank={1} name="나" count={count} frame={frame} className="mt-6" />
+        <label className="mt-4 block font-note text-lg">
+          이동 미리보기 · {count}회
+          <input
+            type="range"
+            min={0}
+            max={STAGES[STAGES.length - 1].threshold}
+            value={count}
+            onChange={(event) => setCount(Number(event.target.value))}
+            className="block w-full accent-pencil"
+          />
+        </label>
+        <div className="mt-4 flex flex-wrap gap-2">
           <MarkerButton size="sm" onClick={reset}>
-            23으로 되돌리기
+            자리에 앉기 · 0회
+          </MarkerButton>
+          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(STAGES[1].threshold / 2)}>
+            이동 중 보기
+          </MarkerButton>
+          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(STAGES[1].threshold)}>
+            엘베 도착 보기
           </MarkerButton>
           <MarkerButton size="sm" variant="ghost" onClick={() => setDone((d) => !d)}>
             {done ? "다시 활성화" : "정산 상태 보기"}

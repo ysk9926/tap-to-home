@@ -8,9 +8,9 @@ import { dropPushTokens, listPushTokens } from "./tokens";
 /**
  * 퇴근 신호 푸시 (ADR 0006).
  *
- * 인앱 토스트로 이미 전달된 신호는 보내지 않는다. 판단 기준은 `readAt` 이다 —
- * Realtime 브로드캐스트가 성공하면 호출부가 markSignalsRead 로 채우고, 폴링 경로는
- * takeUnreadSignals 가 채운다. 발송 직전에 한 번 더 읽어 그 사이 읽힌 것을 거른다.
+ * 푸시 발송 전에 수신 확인된 신호는 보내지 않는다. 판단 기준은 `readAt` 이다 — 보이는
+ * 화면에서 실시간 신호를 표시한 클라이언트의 확인 또는 폴링 경로의 takeUnreadSignals 가
+ * 채운다. 확인과 푸시 발송이 경합하면 두 경로 모두 도착할 수 있다(ADR 0006).
  *
  * 실패는 로그만 남긴다. 신호 자체는 이미 저장됐고 인앱 경로가 따로 있다.
  */

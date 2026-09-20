@@ -1,40 +1,79 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
-import { fetchJson } from "@/lib/fetch-json";
-import type { UnreadSignal } from "@/features/signal/server/signals";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ApiError, fetchJson } from "@/lib/fetch-json";
+import { signalsUnreadKey } from "@/features/realtime/query-keys";
+import { isAppVisible } from "@/features/realtime/browser-activity";
+import { retrySyncQuery, type QueryPolicy } from "@/features/realtime/sync-policy";
+import { useSyncPolling } from "@/features/realtime/hooks/use-sync-polling";
+import type { UnreadSignal } from "../server/signals";
+import { createSignalInbox, type SignalInbox } from "../signal-inbox";
 
-export const SIGNALS_UNREAD_KEY = ["signals", "unread"] as const;
-export const SIGNAL_POLL_MS = 5000;
 export const TOAST_TTL_MS = 4000;
-
 export type ToastItem = UnreadSignal;
 
-/**
- * 받은 신호 토스트 목록. polling=true 면 5초마다 미읽음을 가져온다 (서버가 읽음 처리).
- * Realtime 단계에서는 push() 로 직접 넣는다. 각 토스트는 4초 뒤 사라진다.
- */
-export function useSignalToasts({ polling }: { polling: boolean }) {
+export function useSignalToasts({ userId, active, visible, policy }: {
+  userId: string; active: boolean; visible: boolean; policy: QueryPolicy;
+}) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-
-  const push = useCallback((signal: ToastItem) => {
-    setToasts((prev) => (prev.some((t) => t.id === signal.id) ? prev : [...prev, signal]));
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== signal.id)), TOAST_TTL_MS);
-  }, []);
-
-  const unread = useQuery({
-    queryKey: SIGNALS_UNREAD_KEY,
-    enabled: polling,
-    refetchInterval: polling ? SIGNAL_POLL_MS : false,
-    staleTime: 0,
-    gcTime: 0,
-    queryFn: () => fetchJson<{ signals: UnreadSignal[] }>("/api/signals/unread").then((r) => r.signals),
-  });
+  const inbox = useRef<SignalInbox | null>(null);
+  const deferred = useRef(new Map<string, UnreadSignal>());
 
   useEffect(() => {
-    unread.data?.forEach(push);
-  }, [unread.data, push]);
+    if (!active) return;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const pending = deferred.current;
+    const current = createSignalInbox({
+      now: Date.now,
+      visible: isAppVisible,
+      onToast: (signal) => {
+        setToasts((prev) => [...prev, signal]);
+        const timer = setTimeout(() => {
+          timers.delete(timer);
+          setToasts((prev) => prev.filter((toast) => toast.id !== signal.id));
+        }, TOAST_TTL_MS);
+        timers.add(timer);
+      },
+      acknowledge: async (ids) => {
+        const response = await fetch("/api/signals/read", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        if (!response.ok) throw new ApiError(response.status, "신호 수신 확인에 실패했어요");
+      },
+    });
+    inbox.current = current;
+    return () => {
+      inbox.current = null;
+      current.dispose();
+      timers.forEach(clearTimeout);
+      pending.clear();
+    };
+  }, [userId, active]);
 
+  const unread = useQuery({
+    queryKey: signalsUnreadKey(userId),
+    ...policy,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchIntervalInBackground: false,
+    retry: retrySyncQuery,
+    queryFn: ({ signal }) => fetchJson<{ signals: UnreadSignal[] }>("/api/signals/unread", { signal }).then((result) => result.signals),
+  });
+  useSyncPolling(policy, unread.refetch);
+
+  useEffect(() => {
+    if (!active) return;
+    unread.data?.forEach((signal) => deferred.current.set(signal.id, signal));
+    if (!visible) return;
+    deferred.current.forEach((signal) => inbox.current?.accept(signal, "poll"));
+    deferred.current.clear();
+  }, [unread.data, unread.dataUpdatedAt, visible, active]);
+
+  const push = useCallback((signal: UnreadSignal) => { inbox.current?.accept(signal, "realtime"); }, []);
   return { toasts, push };
 }

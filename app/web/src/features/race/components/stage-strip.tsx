@@ -1,7 +1,8 @@
 import { Stickman } from "@/components/stickman";
 import { cn } from "@/lib/cn";
-import { STAGES, progressOf, stageOf } from "../stages";
+import { STAGES, poseOf } from "../stages";
 import { StageLandmark } from "./stage-landmark";
+import { RACER_SIZE, trackPositionOf } from "./track-layout";
 
 type StageStripProps = {
   count: number;
@@ -22,9 +23,6 @@ function edgeAlign(i: number, last: number) {
  * 지나온 랜드마크는 연필색, 아직 못 간 곳은 연한 색. 집은 도착하면 매직색으로 진해진다.
  */
 export function StageStrip({ count, frame = 0, name = "나", className }: StageStripProps) {
-  const stage = stageOf(count);
-  const pct = progressOf(count);
-
   return (
     <div className={cn("relative h-24 shrink-0", className)}>
       <div className="absolute inset-x-0 bottom-5 border-t-[1.5px] border-pencil" />
@@ -39,11 +37,11 @@ export function StageStrip({ count, frame = 0, name = "나", className }: StageS
               edgeAlign(i, STAGES.length - 1),
               reached ? "text-pencil" : "text-pencil-soft",
             )}
-            style={{ left: `${progressOf(s.threshold)}%` }}
+            style={{ left: s.key === "seat" ? 0 : trackPositionOf(s.threshold) }}
           >
             <StageLandmark
               stage={s.key}
-              size={isHome ? 34 : 30}
+              size={s.key === "seat" ? RACER_SIZE : isHome ? 34 : 30}
               className={cn(isHome && reached && "text-marker")}
             />
             <span className="h-[21px] whitespace-nowrap font-note text-[15px] leading-[21px]">{s.short}</span>
@@ -52,12 +50,12 @@ export function StageStrip({ count, frame = 0, name = "나", className }: StageS
       })}
       <div
         className="absolute bottom-[21px] -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
-        style={{ left: `${pct}%` }}
+        style={{ left: trackPositionOf(count) }}
       >
         <div className="absolute left-1/2 -top-5 -translate-x-1/2 whitespace-nowrap font-note text-base">
           {name}
         </div>
-        <Stickman pose={stage.pose} size={40} frame={frame} />
+        <Stickman pose={poseOf(count)} size={RACER_SIZE} frame={frame} />
       </div>
     </div>
   );

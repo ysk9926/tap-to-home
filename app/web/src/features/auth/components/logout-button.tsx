@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { MarkerDialog } from "@/components/marker-dialog";
+import { useLiveSync } from "@/features/realtime/live-sync-context";
 import { signOut } from "@/lib/auth/client";
 
 /**
@@ -12,6 +13,7 @@ import { signOut } from "@/lib/auth/client";
  */
 export function LogoutButton({ username }: { username: string }) {
   const router = useRouter();
+  const { endSession } = useLiveSync();
   const [asking, setAsking] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export function LogoutButton({ username }: { username: string }) {
     setPending(true);
     try {
       await signOut();
+      await endSession();
       setAsking(false);
       // replace: 뒤로 가기로 앱 화면에 돌아오지 못하게 한다.
       // refresh 로 서버 레이아웃이 세션을 다시 읽게 해 캐시된 화면도 비운다

@@ -36,6 +36,12 @@ export function stageOf(count: number): Stage {
   return current;
 }
 
+/** 자리를 떠난 뒤에는 엘리베이터에 닿기 전이라도 걸어간다. */
+export function poseOf(count: number): StickmanPose {
+  const stage = stageOf(count);
+  return stage.key === "seat" && count > 0 ? "walk" : stage.pose;
+}
+
 /** 경로 위 위치(0~100%). 집에 도착한 뒤에는 100 에 고정. 단계 랜드마크 위치도 이 함수에 threshold 를 넣어 구한다 */
 export function progressOf(count: number): number {
   return (Math.min(count, HOME_THRESHOLD) / HOME_THRESHOLD) * 100;

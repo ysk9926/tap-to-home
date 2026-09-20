@@ -48,17 +48,17 @@ describe("takeUnreadSignals", () => {
 });
 
 describe("markSignalsRead", () => {
-  it("marks the realtime-delivered rows read so the polling path does not re-toast them", async () => {
-    const at = new Date(NOW.getTime() + 3 * SIGNAL_COOLDOWN_MS);
-    const result = await sendSignal(s.id, "rescue", at);
-    expect(result.signals.map((row) => row.receiverId).sort()).toEqual([r1.id, r2.id].sort());
+  it("only marks the authenticated receiver's rows and is idempotent", async () => {
+    const at = new Date(NOW.getTime() + 5 * SIGNAL_COOLDOWN_MS);
+    const sent = await sendSignal(s.id, "normal", at);
 
-    await markSignalsRead(
-      result.signals.map((row) => row.id),
-      at,
-    );
+    await markSignalsRead(r1.id, sent.signals.map((signal) => signal.id), at);
+    await markSignalsRead(r1.id, sent.signals.map((signal) => signal.id), at);
 
-    expect(await takeUnreadSignals(r1.id, at)).toEqual([]);
-    expect(await takeUnreadSignals(r2.id, at)).toEqual([]);
+    const rows = await prisma.signal.findMany({
+      where: { id: { in: sent.signals.map((signal) => signal.id) } },
+    });
+    expect(rows.find((row) => row.receiverId === r1.id)?.readAt).toEqual(at);
+    expect(rows.find((row) => row.receiverId === r2.id)?.readAt).toBeNull();
   });
 });
