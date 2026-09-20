@@ -44,7 +44,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ d
 
       <div className="mt-auto flex flex-col gap-2 pt-6">
         <Link
-          href="/collection"
+          href="/my/collection"
           className="mk mk-pill block px-4 py-2.5 text-center font-ui text-xl font-bold text-ink"
         >
           도감 전체 보기
