@@ -51,8 +51,8 @@ export const STICKMAN_POSES: Record<StickmanPose, PoseDef> = {
   },
   subway: {
     frames: [
-      "M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L28 10 M28 10 V0 M20 25 L14 35",
-      "M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L29 9 M29 9 V0 M20 25 L13 34",
+      "M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L31 28 L32 10 M32 0 V4 M29 4 H35 L34 10 H30 Z M20 25 L14 35",
+      "M20 18 V38 M20 38 L16 56 M20 38 L25 56 M20 25 L30 27 L32 10 M32 0 V4 M29 4 H35 L34 10 H30 Z M20 25 L13 34",
     ],
     head: [20, 11],
   },
@@ -64,9 +64,10 @@ export const STICKMAN_POSES: Record<StickmanPose, PoseDef> = {
     head: [20, 11],
   },
   lie: {
+    // Reel v2 pose: neck starts at the head's right edge; arms stay at the shoulder.
     frames: [
-      "M14 48 L36 48 M36 48 L52 50 M36 48 L50 44 M18 44 L26 40 M18 50 L12 54 M6 40 C4 36 10 34 12 38 M4 36 L2 32",
-      "M14 48 L36 48 M36 48 L52 50 M36 48 L50 44 M18 44 L26 41 M18 50 L12 54 M6 40 C4 36 10 34 12 38 M4 36 L2 32",
+      "M19 47 L35 47 M35 47 L45 43 L52 47 M35 47 L44 53 L54 53 M23 47 L28 42 L33 45 M23 47 L28 51 L33 49",
+      "M19 47 L35 47 M35 47 L45 43 L52 47 M35 47 L44 53 L54 53 M23 47 L28 41.55 L33 45 M23 47 L28 51 L33 49",
     ],
     head: [12, 47],
     wide: true,
@@ -110,8 +111,12 @@ export function Stickman({
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <circle cx={hx} cy={hy} r="7" />
-      <path d={`M${hx - 3} ${hy - 1} v2 M${hx + 3} ${hy - 1} v2`} />
+      <circle cx={hx} cy={hy} r="7" fill="var(--paper)" />
+      {pose === "lie" ? <path
+        d="M-3.5 -1 Q-2 0 -.5 -1 M1.5 -1 Q3 0 4.5 -1"
+        transform={`translate(${hx} ${hy}) rotate(-90)`}
+        strokeWidth={thick ? 1.7 : 1.3}
+      /> : <path d={`M${hx - 3} ${hy - 1} v2 M${hx + 3} ${hy - 1} v2`} />}
       <path d={def.frames[frame]} />
     </svg>
   );

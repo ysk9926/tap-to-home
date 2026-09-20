@@ -24,7 +24,7 @@ export function RaceScene({ count, running = false, occupied = true, frame = 0, 
   const stage = stageOf(count).key;
   const moving = running && stage !== "home";
   const doorway = stage === "elevator" || stage === "lobby" || stage === "subway";
-  const x = moving ? 67 : stage === "seat" ? 8 : stage === "crosswalk" ? 42 : 23;
+  const x = moving ? 67 : stage === "seat" ? 8 : stage === "crosswalk" ? 42 : 17;
   return (
     <svg
       width={size * 1.5} height={size} viewBox="0 0 108 72"
@@ -44,16 +44,17 @@ export function RaceScene({ count, running = false, occupied = true, frame = 0, 
       </g>}
       {doorway && <>
         {stage === "lobby" ? <>
-          <path d="M3 12 Q35 8 70 12 L68 19 L5 19 Z M9 20 L8 67 M65 20 L66 67" />
-          <path d="M16 12 L15 18 M34 11 L34 18 M52 12 L53 18" opacity=".5" />
+          <path d="M3 3 Q35 0 70 3 L68 10 L5 10 Z M9 11 L8 67 M65 11 L66 67" />
+          <path d="M16 3 L15 9 M34 2 L34 9 M52 3 L53 9" opacity=".5" />
         </> : stage === "subway" ? <>
           <path d="M2 67 V16 Q2 5 15 5 H64 Q74 5 74 16 V67 Z" />
           <path d="M6 23 H13 V42 H6 Z M62 23 H69 V42 H62 Z M26 65 H53" />
+          <path d="M21 10 H57" />
         </> : <>
-          <path d="M13 67 V15 Q37 13 61 15 V67" />
-          <path d="M29 9 L35 3 L41 9 M67 34 v2" />
+          <path d="M13 67 V10 Q37 8 61 10 V67" />
+          <path d="M29 5 L35 0 L41 5 M67 34 v2" />
         </>}
-        <path d="M18 67 V21 H56 V67" fill="var(--paper-2)" />
+        <path d="M18 67 V12 H56 V67" fill="var(--paper-2)" />
       </>}
       {stage === "crosswalk" && <>
         <path d="M17 67 V32 M8 4 H26 V32 H8 Z" fill="var(--paper)" />
@@ -63,31 +64,31 @@ export function RaceScene({ count, running = false, occupied = true, frame = 0, 
         <path d="M32 67 l4 -7 h6 l-4 7 Z M44 67 l4 -7 h6 l-4 7 Z M56 67 l4 -7 h6 l-4 7 Z" opacity=".5" />
       </>}
       {stage === "home" && <path d="M2 28 L54 3 L106 28 M9 26 V67 H101 V26" />}
-      {occupied && (stage === "home" ? <>
-        <path d="M7 32 V66 M7 55 Q54 53 101 55 V66 M7 61 H101 M101 46 V60" />
-        <path d="M10 49 Q18 44 29 49 L29 54 H10 Z" fill="var(--paper-2)" />
-        <g transform="translate(9 28)"><Stickman pose="lie" size={58} /></g>
-        <text x="64" y="23" stroke="none" fill="currentColor" className="font-note" fontSize="17">z z Z</text>
-      </> : <g
-        transform={`translate(${x} ${doorway && !moving ? 25 : 10})`}
-        className="transition-transform duration-150 ease-[steps(2)]"
-      >
-        {moving ? <>
-          <g className="race-run-first"><Stickman pose="run" size={60} frame={frame} /></g>
-          <g className="race-run-second"><Stickman pose="run" size={60} frame={frame === 0 ? 1 : 0} /></g>
-        </> : <Stickman pose={poseOf(count)} size={doorway ? 43 : 60} frame={frame} />}
-      </g>)}
-      {doorway && <>
-        {/* Translucent doors keep the waiting passenger visible inside. */}
-        <path d="M18 22 H37 V67 H18 Z M22 29 H32 V43 H22 Z"
-          fill="var(--paper)" fillOpacity={moving ? 1 : .35}
+      {doorway && <g strokeOpacity={moving ? 1 : .45}>
+        {/* Draw glass behind the occupant so its seams cannot cover the face. */}
+        <path d={moving ? "M18 12 H37 V67 H18 Z M22 21 H32 V36 H22 Z" : "M37 12 H18 V67 H37 M22 21 H32 V36 H22 Z"}
+          fill="var(--paper)" fillOpacity={moving ? 1 : .18}
           transform={moving ? "translate(-13 0)" : undefined}
           className="transition-transform duration-150 ease-[steps(2)]" />
-        <path d="M37 22 H56 V67 H37 Z M42 29 H52 V43 H42 Z"
-          fill="var(--paper)" fillOpacity={moving ? 1 : .35}
+        <path d={moving ? "M37 12 H56 V67 H37 Z M42 21 H52 V36 H42 Z" : "M37 12 H56 V67 H37 M42 21 H52 V36 H42 Z"}
+          fill="var(--paper)" fillOpacity={moving ? 1 : .18}
           transform={moving ? "translate(13 0)" : undefined}
           className="transition-transform duration-150 ease-[steps(2)]" />
-      </>}
+      </g>}
+      {occupied && (stage === "home" ? <>
+        <path d="M14 55.5 H84 M14 42 V65 M84 43 V65 M14 61 H84" />
+        <g transform="translate(9 28)"><Stickman pose="lie" size={58} frame={frame} /></g>
+        <text x="37" y="30" stroke="none" fill="currentColor" className="font-note" fontSize="10">z</text>
+        <text x="45" y="22" stroke="none" fill="currentColor" className="font-note" fontSize="8">z</text>
+      </> : <g
+        transform={`translate(${x} 10)`}
+        className={moving ? "transition-transform duration-150 ease-[steps(2)]" : undefined}
+      >
+        {moving ? <>
+          <g className="race-run-first"><Stickman pose="run" size={60} frame={0} /></g>
+          <g className="race-run-second"><Stickman pose="run" size={60} frame={1} /></g>
+        </> : <Stickman pose={poseOf(count)} size={60} frame={frame} />}
+      </g>)}
     </svg>
   );
 }

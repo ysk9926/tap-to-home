@@ -57,14 +57,18 @@ export function RaceTrack({ count, frame = 0, compact = false, name, bubble, ina
       className="absolute h-1 w-1 -translate-x-1/2 rounded-full bg-pencil transition-[left] duration-200 ease-[steps(3)]"
       style={{ left: trackPositionOf(count, size), bottom: railBottom - 1 }}
     />
-    {running && <div
-      role="img" aria-label={SCENE_CAPTIONS[current.key][1]}
-      className="absolute -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
+    {/* Keep the position wrapper mounted so the first tap can move from the idle spot. */}
+    <div
+      role={running ? "img" : undefined} aria-label={running ? SCENE_CAPTIONS[current.key][1] : undefined}
+      aria-hidden={!running}
+      className="pointer-events-none absolute -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
       style={{ left: position, bottom: railBottom - personSize * 6 / 60, width: personSize * 40 / 60, height: personSize }}
     >
-      <div className="race-run-first absolute inset-0"><Stickman pose="run" size={personSize} frame={frame} /></div>
-      <div className="race-run-second absolute inset-0"><Stickman pose="run" size={personSize} frame={frame === 0 ? 1 : 0} /></div>
-    </div>}
+      {running && <>
+        <div className="race-run-first absolute inset-0"><Stickman pose="run" size={personSize} frame={0} /></div>
+        <div className="race-run-second absolute inset-0"><Stickman pose="run" size={personSize} frame={1} /></div>
+      </>}
+    </div>
     {(name || bubble) && <div
       className="absolute flex w-28 max-w-full -translate-x-1/2 justify-center font-note text-base transition-[left] duration-200 ease-[steps(3)]"
       style={{ left: `clamp(56px, ${position}, calc(100% - 56px))`, bottom: railBottom + size + 2 }}

@@ -1,0 +1,17 @@
+{
+  "fps": 30,
+  "duration": 30,
+  "reference": "Rendered 30fps reel: inspect displayed frames, not browser click wall-clock logs.",
+  "groups": [
+    {"kind": "keyboard", "frames": [9, 18, 26, 35, 43, 52], "gain": 0.18, "evidence": "인트로 앉은 포즈에서 손이 내려오는 프레임"},
+    {"kind": "footstep", "frames": [69, 77, 86, 94, 103, 111, 120, 129], "gain": 0.32, "evidence": "달리는 캐릭터의 상하 움직임이 바닥으로 돌아오는 프레임"},
+    {"kind": "tap", "frames": [210], "gain": 0.85, "evidence": "인트로 버튼이 노랗게 눌리기 시작하는 첫 출력 프레임, 7.000초"},
+    {"kind": "tap", "frames": [252, 257, 263, 267, 272, 276, 281, 286, 290], "gain": 0.7, "evidence": "앱 카운터 1498→1507의 각 숫자 변경 프레임"},
+    {"kind": "rank", "frames": [447], "gain": 0.45, "evidence": "민경 1→2위, 수현 2→1위와 1509회가 표시되는 프레임, 14.900초"},
+    {"kind": "tap", "frames": [488, 490, 494, 498, 502, 506, 510, 514, 518, 522], "gain": 0.7, "evidence": "신호 전송 화면 카운터 1507→1517의 각 숫자 변경 프레임"},
+    {"kind": "notification", "frames": [528], "gain": 0.55, "evidence": "수신 화면의 노란 알림이 처음 나타나는 프레임, 17.600초"},
+    {"kind": "tap", "frames": [610, 618, 627], "gain": 0.7, "evidence": "집 도착 화면 카운터 9997→10000의 각 숫자 변경 프레임"},
+    {"kind": "success", "frames": [627], "gain": 0.55, "evidence": "10000회와 완료 버튼이 표시되는 첫 프레임, 20.900초"},
+    {"kind": "paper", "frames": [60, 135, 240, 360, 480, 600, 690, 750, 810], "gain": 0.18, "evidence": "장면 전환 프레임. 17.6초 수신 전환은 알림음이 담당"}
+  ]
+}
