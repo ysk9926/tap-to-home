@@ -2,6 +2,7 @@ import "server-only";
 import type { SignalLevel } from "@/components/signal-toast";
 import { signalMessage } from "@/features/signal/messages";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { isPushConfigured, sendToToken } from "./fcm";
 import { dropPushTokens, listPushTokens } from "./tokens";
 
@@ -23,7 +24,7 @@ export async function sendSignalPush(
 
   // 아직 안 읽힌 신호만. 그 사이 인앱으로 봤으면 푸시하지 않는다
   const pending = await prisma.signal.findMany({
-    where: { id: { in: signalIds }, readAt: null },
+    where: { id: { in: signalIds }, readAt: null, sender: ACTIVE_USER, receiver: ACTIVE_USER },
     select: { receiverId: true },
   });
   if (pending.length === 0) return;
@@ -31,7 +32,7 @@ export async function sendSignalPush(
   const receiverIds = [...new Set(pending.map((s) => s.receiverId))];
   // 알림을 끈 사람에게는 보내지 않는다 (/my/profile). 인앱 토스트는 이 설정과 무관하다
   const optedIn = await prisma.user.findMany({
-    where: { id: { in: receiverIds }, notifySignal: true, deletedAt: null },
+    where: { id: { in: receiverIds }, notifySignal: true, ...ACTIVE_USER },
     select: { id: true },
   });
   if (optedIn.length === 0) return;

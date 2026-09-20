@@ -2,6 +2,7 @@ import "server-only";
 import { settlementMessage } from "@/features/titles/messages";
 import type { TitleId } from "@/features/titles/catalog";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { isPushConfigured, sendToToken } from "./fcm";
 import { dropPushTokens, listPushTokens } from "./tokens";
 
@@ -24,7 +25,7 @@ export async function sendSettlementPush(items: SettlementPushItem[], ymd: strin
   if (items.length === 0 || !isPushConfigured()) return;
 
   const optedIn = await prisma.user.findMany({
-    where: { id: { in: items.map((i) => i.userId) }, notifySettlement: true, deletedAt: null },
+    where: { id: { in: items.map((i) => i.userId) }, notifySettlement: true, ...ACTIVE_USER },
     select: { id: true },
   });
   const allowed = new Set(optedIn.map((u) => u.id));

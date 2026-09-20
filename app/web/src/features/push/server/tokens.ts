@@ -1,6 +1,7 @@
 import "server-only";
 import type { PushPlatform } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 
 /**
  * 앱이 실행될 때마다 토큰을 올린다. 같은 토큰이 다른 계정에서 올라오면 소유자를 바꾼다
@@ -11,6 +12,8 @@ export async function registerPushToken(
   token: string,
   platform: PushPlatform,
 ): Promise<void> {
+  const active = await prisma.user.findFirst({ where: { id: userId, ...ACTIVE_USER }, select: { id: true } });
+  if (!active) return;
   await prisma.pushToken.upsert({
     where: { token },
     create: { userId, token, platform },
@@ -32,7 +35,7 @@ export async function dropPushTokens(tokens: string[]): Promise<void> {
 export async function listPushTokens(userIds: string[]): Promise<Map<string, string[]>> {
   if (userIds.length === 0) return new Map();
   const rows = await prisma.pushToken.findMany({
-    where: { userId: { in: userIds } },
+    where: { userId: { in: userIds }, user: ACTIVE_USER },
     select: { userId: true, token: true },
   });
   const byUser = new Map<string, string[]>();

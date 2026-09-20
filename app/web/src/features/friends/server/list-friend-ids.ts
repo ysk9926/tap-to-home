@@ -13,8 +13,8 @@ export async function listFriendIds(userId: string, db: Prisma.TransactionClient
     where: {
       status: "accepted",
       OR: [
-        { requesterId: userId, addressee: ACTIVE_USER },
-        { addresseeId: userId, requester: ACTIVE_USER },
+        { requesterId: userId, requester: ACTIVE_USER, addressee: ACTIVE_USER },
+        { addresseeId: userId, requester: ACTIVE_USER, addressee: ACTIVE_USER },
       ],
     },
     select: { requesterId: true, addresseeId: true },

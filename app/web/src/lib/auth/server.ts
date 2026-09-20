@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
 import { prisma } from "@/lib/db";
 
 export const USERNAME_MIN = 3;
@@ -24,6 +25,13 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
   },
+  databaseHooks: { session: { create: { before: async (session) => {
+    const active = await prisma.user.findFirst({
+      where: { id: session.userId, deletedAt: null, suspendedAt: null }, select: { id: true },
+    });
+    if (!active) throw new APIError("FORBIDDEN", { message: "이용할 수 없는 계정입니다" });
+    return { data: session };
+  } } } },
   plugins: [
     username({
       minUsernameLength: USERNAME_MIN,

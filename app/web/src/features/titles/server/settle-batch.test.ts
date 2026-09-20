@@ -11,15 +11,22 @@ const RUN_DATE = kstDate(YESTERDAY);
 
 let tapped: { id: string };
 let idle: { id: string };
+let suspended: { id: string };
 
 beforeAll(async () => {
-  [tapped, idle] = await Promise.all([createTestUser("btap"), createTestUser("bidle")]);
+  [tapped, idle, suspended] = await Promise.all([
+    createTestUser("btap"),
+    createTestUser("bidle"),
+    createTestUser("bsuspended"),
+  ]);
   await recordTaps(tapped.id, 1200, YESTERDAY);
+  await recordTaps(suspended.id, 1200, YESTERDAY);
+  await prisma.user.update({ where: { id: suspended.id }, data: { suspendedAt: AFTER_MIDNIGHT } });
   // idle 은 run 행만 있고 탭이 0인 상태를 만든다
   await prisma.dailyRun.create({ data: { userId: idle.id, runDate: RUN_DATE } });
 });
 afterAll(async () => {
-  await deleteTestUsers([tapped.id, idle.id]);
+  await deleteTestUsers([tapped.id, idle.id, suspended.id]);
 });
 
 describe("settleAllForDate", () => {
@@ -37,6 +44,9 @@ describe("settleAllForDate", () => {
       where: { dailyRun: { userId: idle.id, runDate: RUN_DATE } },
     });
     expect(skipped).toBeNull();
+    expect(await prisma.dailyResult.findFirst({
+      where: { dailyRun: { userId: suspended.id, runDate: RUN_DATE } },
+    })).toBeNull();
   });
 
   it("is safe to run twice", async () => {

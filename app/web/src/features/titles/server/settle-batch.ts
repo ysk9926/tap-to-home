@@ -1,6 +1,7 @@
 import "server-only";
 import { sendSettlementPush, type SettlementPushItem } from "@/features/push/server/send-settlement-push";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { runDateToYmd } from "@/lib/kst";
 import { settleRun } from "./settle";
 
@@ -29,7 +30,7 @@ const CONCURRENCY = 5;
  */
 export async function settleAllForDate(runDate: Date, now: Date = new Date()): Promise<BatchReport> {
   const targets = await prisma.dailyRun.findMany({
-    where: { runDate, tapCount: { gt: 0 }, result: null, user: { deletedAt: null } },
+    where: { runDate, tapCount: { gt: 0 }, result: null, user: ACTIVE_USER },
     select: { id: true, tapCount: true, user: { select: { id: true, name: true, username: true } } },
   });
 

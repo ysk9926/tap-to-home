@@ -28,21 +28,38 @@ describe("listRecords", () => {
 });
 
 describe("getRecordDetail", () => {
-  it("returns the day's summary and marks it seen", async () => {
+  it("records an actual detail view once, separately from notification seenAt", async () => {
     const user = { id: me.id, name: me.name, username: me.username };
+    const run = await prisma.dailyRun.findUniqueOrThrow({
+      where: { userId_runDate: { userId: me.id, runDate: kstDate(DAY) } },
+    });
+    await prisma.dailyResult.update({ where: { dailyRunId: run.id }, data: { seenAt: NOW } });
+
     const detail = await getRecordDetail(user, "2026-09-18");
+    await getRecordDetail(user, "2026-09-18");
     expect(detail?.total).toBe(1200);
     expect(detail?.result).not.toBeNull();
 
-    const saved = await prisma.dailyResult.findFirstOrThrow({
-      where: { dailyRun: { userId: me.id, runDate: kstDate(DAY) } },
-    });
-    expect(saved.seenAt).not.toBeNull();
+    expect(await prisma.productEvent.findMany({
+      where: { userId: me.id, type: "result_viewed", entityId: run.id },
+      select: { dedupeKey: true },
+    })).toEqual([{ dedupeKey: `result_viewed:${me.id}:${run.id}` }]);
+    expect((await prisma.dailyResult.findUniqueOrThrow({ where: { dailyRunId: run.id } })).seenAt).toEqual(NOW);
   });
 
   it("returns null for an unsettled or malformed date", async () => {
     const user = { id: me.id, name: me.name, username: me.username };
     expect(await getRecordDetail(user, "2026-01-01")).toBeNull();
     expect(await getRecordDetail(user, "not-a-date")).toBeNull();
+  });
+
+  it("does not write view state for a suspended member", async () => {
+    const user = { id: me.id, name: me.name, username: me.username };
+    await prisma.user.update({ where: { id: me.id }, data: { suspendedAt: NOW } });
+    try {
+      await expect(getRecordDetail(user, "2026-09-18")).resolves.toBeNull();
+    } finally {
+      await prisma.user.update({ where: { id: me.id }, data: { suspendedAt: null } });
+    }
   });
 });

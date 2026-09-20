@@ -1,6 +1,8 @@
 import "server-only";
+import { recordResultViewed } from "@/features/analytics/server/events";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { kstDate, kstTimeLabel, runDateToYmd } from "@/lib/kst";
 import { isTitleId, type TitleId } from "../catalog";
 import { peakHour } from "../evaluate";
@@ -61,6 +63,9 @@ export async function getRecordDetail(user: CurrentUser, ymd: string): Promise<T
   const runDate = new Date(`${ymd}T00:00:00.000Z`);
   if (Number.isNaN(runDate.getTime())) return null;
 
+  const active = await prisma.user.findFirst({ where: { id: user.id, ...ACTIVE_USER }, select: { id: true } });
+  if (!active) return null;
+
   const run = await prisma.dailyRun.findUnique({
     where: { userId_runDate: { userId: user.id, runDate } },
     include: { result: true, tapEvents: { select: { tappedAt: true, batchSize: true } } },
@@ -73,9 +78,12 @@ export async function getRecordDetail(user: CurrentUser, ymd: string): Promise<T
     select: { titleId: true },
   });
 
-  if (!run.result.seenAt) {
-    await prisma.dailyResult.update({ where: { dailyRunId: run.id }, data: { seenAt: new Date() } });
-  }
+  await prisma.$transaction(async (tx) => {
+    if (!run.result?.seenAt) {
+      await tx.dailyResult.update({ where: { dailyRunId: run.id }, data: { seenAt: new Date() } });
+    }
+    await recordResultViewed(tx, user.id, run.id);
+  });
 
   return {
     date: ymd,
