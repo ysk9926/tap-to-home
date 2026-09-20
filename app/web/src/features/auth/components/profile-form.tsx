@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { TextField } from "@/components/text-field";
-import { NAME_MAX, NAME_MIN, updateNameAction, type ActionState } from "../actions";
+import { updateNameAction } from "../actions";
+import { NAME_MAX, NAME_MIN, type ActionState } from "../name-rules";
 
 export function ProfileForm({ name }: { name: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateNameAction, {});

@@ -6,11 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
 import { softDeleteAccount } from "./server/delete-account";
-
-export const NAME_MIN = 1;
-export const NAME_MAX = 12;
-
-export type ActionState = { error?: string; ok?: boolean };
+import { NAME_MAX, NAME_MIN, type ActionState } from "./name-rules";
 
 /** 닉네임 변경. 아이디는 친구 검색 키라 바꿀 수 없다 */
 export async function updateNameAction(

@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { TextField } from "@/components/text-field";
-import { deleteAccountAction, type ActionState } from "../actions";
+import { deleteAccountAction } from "../actions";
+import { type ActionState } from "../name-rules";
 
 export function DeleteAccountForm({ username }: { username: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(deleteAccountAction, {});
