@@ -19,10 +19,10 @@ export type Stage = {
 export const STAGES: readonly Stage[] = [
   { key: "seat", label: "자리", short: "자리", threshold: 0, pose: "sit" },
   { key: "elevator", label: "엘리베이터", short: "엘베", threshold: 1500, pose: "stand" },
-  { key: "lobby", label: "로비", short: "로비", threshold: 3200, pose: "walk" },
-  { key: "crosswalk", label: "횡단보도", short: "횡단보도", threshold: 5000, pose: "run" },
+  { key: "lobby", label: "로비", short: "로비", threshold: 3200, pose: "stand" },
+  { key: "crosswalk", label: "횡단보도", short: "횡단보도", threshold: 5000, pose: "stand" },
   { key: "subway", label: "지하철", short: "지하철", threshold: 7300, pose: "subway" },
-  { key: "home", label: "집", short: "집", threshold: 10000, pose: "home" },
+  { key: "home", label: "집", short: "집", threshold: 10000, pose: "lie" },
 ];
 
 export const HOME_THRESHOLD = STAGES[STAGES.length - 1].threshold;
@@ -36,10 +36,10 @@ export function stageOf(count: number): Stage {
   return current;
 }
 
-/** 자리를 떠난 뒤에는 엘리베이터에 닿기 전이라도 걸어간다. */
-export function poseOf(count: number): StickmanPose {
+/** 집에서는 항상 눕고, 그 전에는 최근 입력이 있을 때만 달린다. */
+export function poseOf(count: number, running = false): StickmanPose {
   const stage = stageOf(count);
-  return stage.key === "seat" && count > 0 ? "walk" : stage.pose;
+  return stage.key !== "home" && running ? "run" : stage.pose;
 }
 
 /** 경로 위 위치(0~100%). 집에 도착한 뒤에는 100 에 고정. 단계 랜드마크 위치도 이 함수에 threshold 를 넣어 구한다 */

@@ -24,11 +24,13 @@ export async function POST(request: Request) {
   if (!body) return jsonError(400, "count 는 1~50 사이 정수여야 해요");
 
   try {
-    const result = await recordTaps(user.id, body.count);
-    const payload: RacePayload = { userId: user.id, date: todayKst(), ...result };
+    const now = new Date();
+    const date = todayKst(now);
+    const result = await recordTaps(user.id, body.count, now);
+    const payload: RacePayload = { userId: user.id, date, ...result };
     // 응답을 먼저 보내고 브로드캐스트 (Vercel 은 after() 완료까지 함수를 유지한다)
     after(() => broadcast(userChannel(user.id), RACE_EVENT, payload));
-    return Response.json(result);
+    return Response.json({ ...result, date });
   } catch (e) {
     if (e instanceof RunSettledError) return jsonError(409, e.message);
     throw e;

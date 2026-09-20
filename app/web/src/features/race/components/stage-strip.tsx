@@ -1,6 +1,9 @@
-import { Stickman } from "@/components/stickman";
+"use client";
+
 import { cn } from "@/lib/cn";
-import { STAGES, poseOf } from "../stages";
+import { STAGES } from "../stages";
+import { useRaceMotion } from "../hooks/use-race-motion";
+import { RaceScene } from "./race-scene";
 import { StageLandmark } from "./stage-landmark";
 import { RACER_SIZE, trackPositionOf } from "./track-layout";
 
@@ -18,13 +21,13 @@ function edgeAlign(i: number, last: number) {
 }
 
 /**
- * 메인 화면의 자리→집 진행 바. 높이 96px = 줄노트 세 칸.
- * 트랙 위에 단계 랜드마크가 서 있고 그 아래 이름표, 내 졸라맨 하나가 그 앞을 지나간다.
+ * 메인 화면의 자리→집 진행 바. 현재 장면 아래에 고정 랜드마크와 이름표를 둔다.
  * 지나온 랜드마크는 연필색, 아직 못 간 곳은 연한 색. 집은 도착하면 매직색으로 진해진다.
  */
 export function StageStrip({ count, frame = 0, name = "나", className }: StageStripProps) {
+  const running = useRaceMotion(count);
   return (
-    <div className={cn("relative h-24 shrink-0", className)}>
+    <div className={cn("relative h-32 shrink-0", className)}>
       <div className="absolute inset-x-0 bottom-5 border-t-[1.5px] border-pencil" />
       {STAGES.map((s, i) => {
         const reached = count >= s.threshold;
@@ -49,13 +52,13 @@ export function StageStrip({ count, frame = 0, name = "나", className }: StageS
         );
       })}
       <div
-        className="absolute bottom-[21px] -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
-        style={{ left: trackPositionOf(count) }}
+        className="absolute bottom-[54px] -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
+        style={{ left: `clamp(48px, ${trackPositionOf(count)}, calc(100% - 48px))` }}
       >
         <div className="absolute left-1/2 -top-5 -translate-x-1/2 whitespace-nowrap font-note text-base">
           {name}
         </div>
-        <Stickman pose={poseOf(count)} size={RACER_SIZE} frame={frame} />
+        <RaceScene count={count} running={running} frame={frame} size={52} />
       </div>
     </div>
   );

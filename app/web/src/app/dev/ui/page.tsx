@@ -13,7 +13,7 @@ import { TextField } from "@/components/text-field";
 import { TitleBadge } from "@/components/title-badge";
 import { StageLandmark } from "@/features/race/components/stage-landmark";
 import { STAGES } from "@/features/race/stages";
-import { RaceDemo, StickmanSheet, TapDemo } from "./demos";
+import { RaceDemo, RaceSceneSheet, StickmanSheet, TapDemo } from "./demos";
 import { ExampleScreens } from "./screens";
 
 /**
@@ -190,6 +190,9 @@ export default function DevUiPage() {
             </div>
           </Section>
 
+          <Section id="race-scenes" title="구간별 대기와 출발" lead="탭할 때만 달리고, 800ms 쉬면 현재 구간에서 기다린다. 집에서는 침대에 눕는다.">
+            <RaceSceneSheet />
+          </Section>
           <Section id="race" title="레이스 레인" lead="RaceLane 높이 64px 은 줄노트 두 칸. 배경 줄과 발이 맞물린다.">
             <RaceDemo />
           </Section>
@@ -262,6 +265,7 @@ const SECTIONS: Array<[string, string]> = [
   ["nav", "길찾기"],
   ["stickman", "졸라맨"],
   ["landmarks", "구간 랜드마크"],
+  ["race-scenes", "대기와 출발"],
   ["race", "레이스 레인"],
   ["signals", "신호 토스트"],
   ["badges", "칭호 뱃지"],

@@ -17,7 +17,14 @@ beforeAll(async () => {
   await prisma.friendship.create({ data: { requesterId: me.id, addresseeId: friend.id, status: "accepted" } });
   await recordTaps(me.id, 1, MORNING);
   await recordTaps(me.id, 9999, EVENING);
-  await recordTaps(friend.id, 15000, EVENING);
+  // Historical runs above today's cap are retained and still participate in rankings.
+  await prisma.dailyRun.create({
+    data: {
+      userId: friend.id, runDate: kstDate(EVENING), tapCount: 15000, stage: 5,
+      firstTapAt: EVENING, lastTapAt: EVENING,
+      tapEvents: { create: { batchSize: 15000, tappedAt: EVENING } },
+    },
+  });
 });
 afterAll(async () => {
   await deleteTestUsers([me.id, friend.id]);

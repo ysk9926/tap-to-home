@@ -6,8 +6,9 @@ import { ApiError, fetchJson } from "@/lib/fetch-json";
 import { withRacerCount, type RaceToday } from "../race-state";
 import { createTapBatcher, type TapBatcher } from "../tap-batcher";
 import { raceTodayKey } from "@/features/realtime/query-keys";
+import { HOME_THRESHOLD } from "../stages";
 
-type TapResponse = { tapCount: number; stage: number };
+type TapResponse = { tapCount: number; stage: number; date: string };
 
 /**
  * 탭 한 번 = 캐시의 내 카운트 +1 (즉시) + 프레임 토글 + 배치 전송.
@@ -19,7 +20,7 @@ type TapResponse = { tapCount: number; stage: number };
  * 언마운트 때 dispose 된 인스턴스가 그대로 남아 이후 탭이 전송되지 않는다. effect 안에서
  * 만들면 시뮬레이션 재마운트 때 새 effect 가 다시 실행되어 새 배치기가 생긴다.
  */
-export function useTap({ userId, onTap }: { userId: string; onTap?: (at: number) => void }) {
+export function useTap({ userId, date, onTap }: { userId: string; date: string; onTap?: (at: number) => void }) {
   const queryClient = useQueryClient();
   const [frame, setFrame] = useState<0 | 1>(0);
   const onTapRef = useRef(onTap);
@@ -31,19 +32,27 @@ export function useTap({ userId, onTap }: { userId: string; onTap?: (at: number)
 
   useEffect(() => {
     const batcher = createTapBatcher(async (count) => {
+      // Never flush yesterday's queued taps into a newly loaded day.
+      if (queryClient.getQueryData<RaceToday>(raceTodayKey(userId))?.date !== date) return;
       try {
         const res = await fetchJson<TapResponse>("/api/taps", {
           method: "POST",
           body: JSON.stringify({ count }),
         });
+        if (res.date !== date) {
+          void queryClient.invalidateQueries({ queryKey: raceTodayKey(userId) });
+          return;
+        }
         queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
-          data ? withRacerCount(data, data.me.userId, res.tapCount + batcher.pending()) : data,
+          data && data.date === date && !data.settled ? withRacerCount(data, data.me.userId,
+            res.tapCount >= HOME_THRESHOLD ? res.tapCount : Math.min(HOME_THRESHOLD, res.tapCount + batcher.pending()),
+          ) : data,
         );
       } catch (e) {
         if (e instanceof ApiError && e.status === 409) {
           // 레이스가 이미 마감됨: settled 로 표시하고 서버 값으로 다시 동기화한다 (재시도하지 않는다)
           queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
-            data ? { ...data, settled: true } : data,
+            data && data.date === date ? { ...data, settled: true } : data,
           );
           void queryClient.invalidateQueries({ queryKey: raceTodayKey(userId) });
           return;
@@ -61,9 +70,12 @@ export function useTap({ userId, onTap }: { userId: string; onTap?: (at: number)
       void batcher.flush(); // 언마운트 직전에 쌓인 탭은 보낸다
       batcher.dispose();
     };
-  }, [queryClient, userId]);
+  }, [queryClient, userId, date]);
 
   const tap = useCallback(() => {
+    // Read the synchronous cache so bursts in a single render cannot pass the finish line.
+    const data = queryClient.getQueryData<RaceToday>(raceTodayKey(userId));
+    if (!data || data.date !== date || data.settled || data.me.tapCount >= HOME_THRESHOLD) return;
     const at = Date.now();
     setFrame((f) => (f === 0 ? 1 : 0));
     queryClient.setQueryData<RaceToday>(raceTodayKey(userId), (data) =>
@@ -71,7 +83,7 @@ export function useTap({ userId, onTap }: { userId: string; onTap?: (at: number)
     );
     batcherRef.current?.tap();
     onTapRef.current?.(at);
-  }, [queryClient, userId]);
+  }, [queryClient, userId, date]);
 
   return { tap, frame };
 }

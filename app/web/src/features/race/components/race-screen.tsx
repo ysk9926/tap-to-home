@@ -10,7 +10,7 @@ import { kstDateLabel } from "@/lib/kst";
 import { useRaceSession } from "../hooks/use-race-session";
 import { useTap } from "../hooks/use-tap";
 import type { RaceToday } from "../race-state";
-import { stageOf } from "../stages";
+import { HOME_THRESHOLD, stageOf } from "../stages";
 import { StageStrip } from "./stage-strip";
 
 export function RaceScreen({ initial }: { initial: RaceToday }) {
@@ -37,8 +37,9 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
     if (comboTimer.current) clearTimeout(comboTimer.current);
   }, []);
 
-  const { tap, frame } = useTap({ userId: initial.me.userId, onTap });
+  const { tap, frame } = useTap({ userId: initial.me.userId, date: data.date, onTap });
   const me = data.me;
+  const completed = me.tapCount >= HOME_THRESHOLD;
   const myRank = data.racers.findIndex((r) => r.isMe) + 1;
   const friendCount = data.racers.length - 1;
 
@@ -46,7 +47,7 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
     <div className="flex flex-1 flex-col">
       <ScreenTitle>오늘 퇴근하고 싶은 횟수</ScreenTitle>
       <Note>
-        {kstDateLabel(data.date)} · {data.settled ? "정산 완료" : `아직 ${stageOf(me.tapCount).label}`}
+        {kstDateLabel(data.date)} · {completed ? "집 도착 · 퇴근 완료" : data.settled ? "정산 완료" : `아직 ${stageOf(me.tapCount).label}`}
       </Note>
 
       <div className="mt-2 flex items-baseline gap-2.5">
@@ -57,9 +58,9 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
       <StageStrip count={me.tapCount} frame={frame} name={me.name} className="mt-4" />
 
       <div className="mt-3 flex flex-col items-center">
-        <TapButton onTap={tap} disabled={data.settled} />
+        <TapButton onTap={tap} disabled={data.settled} completed={completed} />
         <p className="mt-2 font-note text-[19px] text-pencil-soft">
-          {data.settled ? "오늘은 정산했어요" : "꾹꾹 누르면 한 칸씩 간다"}
+          {completed ? "오늘은 침대에서 푹 쉬어요" : data.settled ? "오늘은 정산했어요" : "꾹꾹 누르면 한 칸씩 간다"}
         </p>
         <Link
           href="/records"

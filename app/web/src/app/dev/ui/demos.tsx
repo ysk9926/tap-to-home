@@ -6,14 +6,15 @@ import { Stickman, STICKMAN_POSES, type StickmanPose } from "@/components/stickm
 import { TapButton } from "@/components/tap-button";
 import { StageStrip } from "@/features/race/components/stage-strip";
 import { RaceLane } from "@/features/race/components/race-lane";
-import { STAGES, stageOf } from "@/features/race/stages";
+import { RaceScene } from "@/features/race/components/race-scene";
+import { HOME_THRESHOLD, STAGES, stageOf } from "@/features/race/stages";
 
 /** 탭 카운트와 걷기 프레임을 한 곳에서 관리하는 훅. 데모용 */
 function useTapCounter(initial: number) {
   const [count, setCount] = useState(initial);
   const [frame, setFrame] = useState<0 | 1>(0);
   const tap = () => {
-    setCount((c) => c + 1);
+    setCount((c) => Math.min(c + 1, HOME_THRESHOLD));
     setFrame((f) => (f === 0 ? 1 : 0));
   };
   return { count, frame, tap, setCount, reset: () => setCount(initial) };
@@ -26,9 +27,9 @@ export function TapDemo() {
   return (
     <div className="flex flex-wrap items-start gap-8">
       <div className="flex flex-col items-center gap-2">
-        <TapButton onTap={tap} disabled={done} />
+        <TapButton onTap={tap} disabled={done} completed={count >= HOME_THRESHOLD} />
         <p className="font-note text-lg text-pencil-soft">
-          {done ? "정산 후 · 점선" : "꾹꾹 누르면 한 칸씩 간다"}
+          {count >= HOME_THRESHOLD ? "오늘은 침대에서 푹 쉬어요" : done ? "정산 후 · 점선" : "꾹꾹 누르면 한 칸씩 간다"}
         </p>
       </div>
       <div className="min-w-[300px] flex-1">
@@ -59,9 +60,10 @@ export function TapDemo() {
           <MarkerButton size="sm" variant="ghost" onClick={() => setCount(STAGES[1].threshold / 2)}>
             이동 중 보기
           </MarkerButton>
-          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(STAGES[1].threshold)}>
-            엘베 도착 보기
-          </MarkerButton>
+          {STAGES.slice(1).map((stage) => <MarkerButton key={stage.key} size="sm" variant="ghost" onClick={() => setCount(stage.threshold)}>
+            {stage.short} 도착 보기
+          </MarkerButton>)}
+          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(9999)}>마지막 1회 남기기</MarkerButton>
           <MarkerButton size="sm" variant="ghost" onClick={() => setDone((d) => !d)}>
             {done ? "다시 활성화" : "정산 상태 보기"}
           </MarkerButton>
@@ -69,6 +71,18 @@ export function TapDemo() {
       </div>
     </div>
   );
+}
+
+export function RaceSceneSheet() {
+  return <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+    {STAGES.map((stage) => <div key={stage.key} className="font-note text-lg">
+      <p>{stage.label} · {stage.threshold.toLocaleString()}회</p>
+      <div className="mt-2 flex flex-wrap gap-4">
+        <div><RaceScene count={stage.threshold} size={72} /><p>대기</p></div>
+        {stage.key !== "home" && <div><RaceScene count={stage.threshold} running size={72} /><p>탭하면 달리기</p></div>}
+      </div>
+    </div>)}
+  </div>;
 }
 
 /** 6포즈 + 2프레임 스톱모션 재생 */
@@ -127,7 +141,7 @@ export function RaceDemo() {
         <RaceLane rank={5} name="도윤" count={0} inactive />
       </div>
       <div className="flex flex-col items-center gap-2">
-        <TapButton onTap={tap} size={160} />
+        <TapButton onTap={tap} size={160} completed={count >= HOME_THRESHOLD} />
         <span className="font-note text-lg text-pencil-soft">내 레인만 움직인다</span>
       </div>
     </div>

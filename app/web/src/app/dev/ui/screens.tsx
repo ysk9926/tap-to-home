@@ -11,7 +11,7 @@ import { TapButton } from "@/components/tap-button";
 import { TitleBadge } from "@/components/title-badge";
 import { RaceLane } from "@/features/race/components/race-lane";
 import { StageStrip } from "@/features/race/components/stage-strip";
-import { stageOf } from "@/features/race/stages";
+import { HOME_THRESHOLD, stageOf } from "@/features/race/stages";
 import { PhoneFrame } from "./phone-frame";
 
 /** 세 화면이 같은 카운트를 공유해 메인에서 누르면 레이스도 움직인다 */
@@ -19,7 +19,7 @@ export function ExampleScreens() {
   const [count, setCount] = useState(23);
   const [frame, setFrame] = useState<0 | 1>(0);
   const tap = () => {
-    setCount((c) => c + 1);
+    setCount((c) => Math.min(c + 1, HOME_THRESHOLD));
     setFrame((f) => (f === 0 ? 1 : 0));
   };
 
@@ -40,7 +40,7 @@ export function ExampleScreens() {
         </div>
         <StageStrip count={count} frame={frame} className="mt-4" />
         <div className="mt-3 flex flex-col items-center">
-          <TapButton onTap={tap} />
+          <TapButton onTap={tap} completed={count >= HOME_THRESHOLD} />
           <p className="mt-2 font-note text-[19px] text-pencil-soft">꾹꾹 누르면 한 칸씩 간다</p>
         </div>
         <MarkerBox className="mt-auto px-3.5 pb-3 pt-2.5">
