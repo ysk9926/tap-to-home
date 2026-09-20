@@ -25,6 +25,11 @@ model User {
   // username 플러그인 계약 (docs/decisions/0005)
   username        String?   @unique
   displayUsername String?
+  // 소프트 삭제 (2026-09-20). 조회 필터는 src/lib/db/active-user.ts 의 ACTIVE_USER 하나로 모은다
+  deletedAt        DateTime?
+  // 알림 수신 설정 (/my/profile). 인앱 토스트·진입 다이얼로그는 이 설정과 무관하다
+  notifySignal     Boolean   @default(true)
+  notifySettlement Boolean   @default(true)
   sessions        Session[]
   accounts        Account[]
 
@@ -188,6 +193,8 @@ model DailyResult {
   rank           Int
   rankTotal      Int
   settledAt      DateTime @default(now())
+  /// 사용자가 결과를 본 시각. 앱 진입 다이얼로그를 한 번만 띄운다
+  seenAt         DateTime?
   dailyRun       DailyRun @relation(fields: [dailyRunId], references: [id], onDelete: Cascade)
 
   @@map("daily_result")

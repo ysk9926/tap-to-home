@@ -10,6 +10,14 @@ auth 테이블(`user`, `session`, `account`, `verification`)은 better-auth 계�
 | displayUsername | text null | 플러그인 계약. 입력 원문 |
 | email | text unique | `${username}@id.tap-to-home.local` 자동 생성. UI 비노출 |
 | name | text | 닉네임(표시명) |
+| deletedAt | timestamptz null | 소프트 삭제. 채워지면 로그인·검색·랭킹·친구 목록에서 제외한다. row 와 friendship 은 남긴다 |
+| notifySignal | boolean not null default true | 퇴근 신호 푸시 수신 여부 (F2) |
+| notifySettlement | boolean not null default true | 정산 결과 푸시 수신 여부 (F3) |
+
+`deletedAt` 은 조회 시점에 거른다. 필터를 빠뜨려 탈퇴 유저가 유령으로 남는 것을 막기 위해
+조건을 `src/lib/db/active-user.ts` 의 `ACTIVE_USER` 상수 하나로 모으고, 이를 쓰는 네 지점
+(친구 검색·친구 목록·레이스 랭킹·세션 검증)에 각각 회귀 테스트를 둔다. 아이디는 탈퇴 후에도
+unique 제약이 살아 있어 재사용할 수 없다.
 
 ## friendship — 친구 관계
 
@@ -84,6 +92,7 @@ pk(userId, titleId). 도감 카운트 = count(*) / catalog 길이.
 | rank | int | 나+친구 중 순위 |
 | rankTotal | int | 나+친구 수 |
 | settledAt | timestamptz | |
+| seenAt | timestamptz null | 사용자가 이 결과를 본 시각. 앱 진입 다이얼로그를 한 번만 띄우는 기준 |
 
 존재하면 그날은 정산된 것이고 `POST /api/taps` 는 409 를 돌려준다.
 
