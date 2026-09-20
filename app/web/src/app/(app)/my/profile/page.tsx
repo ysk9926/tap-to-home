@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { NotifySwitches } from "@/features/auth/components/notify-switches";
 import { PasswordForm } from "@/features/auth/components/password-form";
@@ -12,6 +12,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="flex flex-1 flex-col">
+      <BackLink href="/my" label="마이페이지" />
       <ScreenTitle>내 정보</ScreenTitle>
       <Note>아이디는 친구가 나를 찾는 열쇠라 바꿀 수 없어요</Note>
 
@@ -29,10 +30,6 @@ export default async function ProfilePage() {
         notifySignal={profile.notifySignal}
         notifySettlement={profile.notifySettlement}
       />
-
-      <Link href="/my" className="mt-auto pt-8 text-center font-note text-lg text-pencil-soft underline underline-offset-4">
-        마이페이지로
-      </Link>
     </div>
   );
 }

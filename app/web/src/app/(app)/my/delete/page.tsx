@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { DeleteAccountForm } from "@/features/auth/components/delete-account-form";
 import { requirePageUser } from "@/lib/auth/current-user";
@@ -8,6 +9,7 @@ export default async function DeleteAccountPage() {
 
   return (
     <div className="flex flex-1 flex-col">
+      <BackLink href="/my" label="마이페이지" />
       <ScreenTitle>계정 탈퇴</ScreenTitle>
       <Note>되돌릴 수 없어요</Note>
 

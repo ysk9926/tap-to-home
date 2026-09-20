@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackLink } from "@/components/back-link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TitleBadge } from "@/components/title-badge";
 import { TITLE_BY_ID } from "@/features/titles/catalog";
@@ -18,6 +19,7 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ d
 
   return (
     <div className="flex flex-1 flex-col">
+      <BackLink href="/records" label="퇴근 기록" />
       <ScreenTitle>그날의 기록</ScreenTitle>
       <Note>{kstDateLabel(summary.date)} · 정산 완료</Note>
 

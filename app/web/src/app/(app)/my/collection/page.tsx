@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/back-link";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TitleBadge } from "@/components/title-badge";
 import { getCollection } from "@/features/titles/server/collection";
@@ -9,6 +10,7 @@ export default async function CollectionPage() {
 
   return (
     <div className="flex flex-1 flex-col">
+      <BackLink href="/my" label="마이페이지" />
       <div className="flex items-baseline justify-between">
         <ScreenTitle>퇴근 도감</ScreenTitle>
         <span className="tabular text-2xl font-bold">

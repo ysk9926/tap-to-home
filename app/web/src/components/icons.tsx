@@ -83,3 +83,16 @@ export function CrownIcon({ size = 14, ...props }: IconProps) {
     </svg>
   );
 }
+
+/** 뒤로가기 화살표. 자로 그은 직선 대신 살짝 처진 손그림 */
+export function BackArrowIcon({ size = 20, ...props }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M20.4 12.3 Q12.2 11.6 4.2 12.1 M10.4 5.4 Q6.8 8.6 3.8 12.2 Q6.9 15.6 10.6 18.6"
+        strokeWidth="2.2"
+        {...stroke}
+      />
+    </svg>
+  );
+}

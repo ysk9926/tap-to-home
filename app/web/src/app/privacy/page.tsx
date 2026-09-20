@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Paper, ScreenTitle } from "@/components/paper";
 import { PrivacyBody } from "@/features/legal/privacy-body";
 
@@ -12,17 +12,9 @@ export default function PrivacyPage() {
   return (
     <Paper className="flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-[420px] px-3 pt-10 pb-16">
+        <BackLink href="/" label="돌아가기" />
         <ScreenTitle>개인정보 처리방침</ScreenTitle>
         <PrivacyBody />
-
-        <div className="mt-10">
-          <Link
-            href="/"
-            className="font-note text-lg underline decoration-dotted underline-offset-4"
-          >
-            ← 돌아가기
-          </Link>
-        </div>
       </div>
     </Paper>
   );

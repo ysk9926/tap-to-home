@@ -59,6 +59,7 @@
 | `HouseIcon`, `BellIcon`, `CrownIcon` | 매직 아이콘. 집은 지붕·벽·바닥만 매직(2.2px)이고 굴뚝·연기·문·창문은 가는 선으로 얹은 손그림 |
 | `TextField` | 밑줄 입력칸. label, hint, error |
 | `BottomNav` | 하단 탭 4개. 활성 탭은 매직 밑줄 |
+| `BackLink` | 세부 화면 제목 위의 뒤로가기. 상위 화면을 `href` 로 못박고 라벨은 그 화면 이름 |
 
 레이스 도메인 (`src/features/race/`): `stages.ts` 가 F1-1 임계값과 포즈 대응(`STAGES`, `stageOf`, `progressOf`, `poseOf`), `StageLandmark` 가 단계별 손그림 표지(기본 40×40 viewBox, 연필 1.7px, 집만 `HouseIcon`), `StageStrip` 이 메인 진행 바(높이 96px = 줄노트 세 칸, 트랙 위 랜드마크 + 아래 이름표), `RaceLane` 이 친구 레이스 한 줄을 그린다. 레인 높이 64px = 줄노트 두 칸.
 
@@ -71,6 +72,7 @@
 - 모든 블록을 `MarkerBox` 로 감싸지 않는다. 프레임은 눌러야 할 것·떠 있는 것에만.
 - 그라데이션·유리 효과·부드러운 그림자·두 번째 강조색 금지.
 - 졸라맨은 `Stickman` 만. 이모지·이미지로 대체하지 않는다.
+- 하단 탭에 없는 화면(`/my/*`, `/records/[date]`, `/privacy`)은 제목 위에 `BackLink` 를 둔다. 웹뷰에는 브라우저 뒤로가기가 없고 푸시로 바로 들어올 수 있어 `router.back()` 대신 상위 화면을 고정한다.
 - 새 컴포넌트를 만들면 `/dev/ui` 에 상태별로 올린다.
 
 ## 에셋

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { BackLink } from "@/components/back-link";
 import { BottomNav } from "@/components/bottom-nav";
 import { Highlight } from "@/components/highlight";
 import { BellIcon, CrownIcon, HouseIcon } from "@/components/icons";
@@ -151,9 +152,15 @@ export default function DevUiPage() {
             </div>
           </Section>
 
-          <Section id="nav" title="하단 탭" lead="활성 탭은 매직 밑줄. 화면 안에 붙박이로 보여주려고 position 만 풀었다.">
-            <div className="relative h-16 w-[360px] [&_nav]:absolute">
-              <BottomNav />
+          <Section id="nav" title="길찾기" lead="하단 탭의 활성 탭은 매직 밑줄. 세부 화면은 제목 위에 BackLink 를 두고, 돌아갈 화면 이름을 라벨로 쓴다.">
+            <div className="flex flex-wrap items-start gap-10">
+              <div className="relative h-16 w-[360px] [&_nav]:absolute">
+                <BottomNav />
+              </div>
+              <div className="flex flex-col items-start">
+                <BackLink href="#nav" label="마이페이지" />
+                <ScreenTitle>퇴근 도감</ScreenTitle>
+              </div>
             </div>
           </Section>
 
@@ -252,7 +259,7 @@ const SECTIONS: Array<[string, string]> = [
   ["frames", "종이와 프레임"],
   ["buttons", "버튼"],
   ["inputs", "입력칸"],
-  ["nav", "하단 탭"],
+  ["nav", "길찾기"],
   ["stickman", "졸라맨"],
   ["landmarks", "구간 랜드마크"],
   ["race", "레이스 레인"],
