@@ -102,8 +102,10 @@ export async function settleRun(
         update: { earnedCount: { increment: 1 } },
       });
     }
+    // settledAt 을 명시한다. DB default(now()) 로 두면 테스트가 정산 시각을 고정할 수 없고,
+    // 크론이 자정 직후 어제를 정산할 때 "언제 정산했는지" 가 호출자 시계와 어긋난다.
     await tx.dailyResult.create({
-      data: { dailyRunId: run.id, primaryTitleId, titleIds, rank, rankTotal },
+      data: { dailyRunId: run.id, primaryTitleId, titleIds, rank, rankTotal, settledAt: now },
     });
 
     return { alreadySettled: false, titleIds, primaryTitleId, newTitleIds, rank, rankTotal };
