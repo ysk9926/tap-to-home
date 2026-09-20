@@ -1,15 +1,22 @@
-import { STAGES, progressOf } from "../stages";
+import { STAGES, stageIndexOf } from "../stages";
 
-/** 자리와 사람은 같은 60 단위 높이로 그려 좌판과 엉덩이가 맞는다. */
-export const RACER_SIZE = 40;
-const SEATED_CENTER = RACER_SIZE * (20 / 60);
-const WORKSPACE_WIDTH = RACER_SIZE * (64 / 60) + 6;
+// Positions inside RaceScene's 108×72 viewBox: seat, doorway, crossing and bed.
+const OCCUPANT_CENTERS = [28, 37, 37, 62, 37, 54];
 
-/** 가구 공간을 확보하고, 첫 구간은 의자에서 엘리베이터까지 이어 준다. */
-export function trackPositionOf(count: number): string {
-  const progress = progressOf(count);
-  const departure = Math.min(Math.max(count, 0) / STAGES[1].threshold, 1);
-  const inset = SEATED_CENTER * (1 - departure)
-    + WORKSPACE_WIDTH * departure * (1 - progress / 100);
-  return `calc(${progress}% + ${inset}px)`;
+/** Fixed scenery occupies equally spaced slots, leaving room at both ends. */
+export function landmarkPositionOf(index: number, size: number): string {
+  const fraction = index / (STAGES.length - 1);
+  return `calc(${fraction * 100}% - ${fraction * size * 1.5}px)`;
+}
+
+/** Interpolate the person between chair/doorway coordinates, never the buildings. */
+export function trackPositionOf(count: number, size: number): string {
+  const index = stageIndexOf(count);
+  const next = Math.min(index + 1, STAGES.length - 1);
+  const fraction = next === index ? 0 : Math.max(0,
+    (count - STAGES[index].threshold) / (STAGES[next].threshold - STAGES[index].threshold),
+  );
+  const progress = (index + fraction) / (STAGES.length - 1);
+  const center = OCCUPANT_CENTERS[index] + (OCCUPANT_CENTERS[next] - OCCUPANT_CENTERS[index]) * fraction;
+  return `calc(${progress * 100}% + ${center * size / 72 - progress * size * 1.5}px)`;
 }

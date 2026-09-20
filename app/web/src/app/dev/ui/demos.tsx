@@ -74,9 +74,11 @@ export function TapDemo() {
 }
 
 export function RaceSceneSheet() {
-  return <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+  return <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
     {STAGES.map((stage) => <div key={stage.key} className="font-note text-lg">
       <p>{stage.label} · {stage.threshold.toLocaleString()}회</p>
+      <StageStrip count={stage.threshold} name="나" />
+      <RaceLane rank={1} name="나" count={stage.threshold} className="mb-4" />
       <div className="mt-2 flex flex-wrap gap-4">
         <div><RaceScene count={stage.threshold} size={72} /><p>대기</p></div>
         {stage.key !== "home" && <div><RaceScene count={stage.threshold} running size={72} /><p>탭하면 달리기</p></div>}

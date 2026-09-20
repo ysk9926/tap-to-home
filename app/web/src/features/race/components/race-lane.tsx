@@ -1,109 +1,35 @@
-"use client";
-
-import { CrownIcon, HouseIcon } from "@/components/icons";
-import { SpeechBubble } from "@/components/speech-bubble";
+import { CrownIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
-import { STAGES, stageOf } from "../stages";
-import { useRaceMotion } from "../hooks/use-race-motion";
-import { RaceScene } from "./race-scene";
-import { trackPositionOf } from "./track-layout";
-
-/**
- * 작은 레인에는 눈금만 두고, 가구와 문은 현재 장면에 함께 그린다.
- */
-const TICK_STAGES = STAGES.filter((s) => s.key !== "seat" && s.key !== "home");
+import { stageOf } from "../stages";
+import { RaceTrack } from "./race-track";
 
 type RaceLaneProps = {
   rank: number;
   name: string;
   count: number;
-  /** 내 레인이면 이름에 형광펜 */
   isMe?: boolean;
-  /** 오늘 아직 안 들어온 친구 */
   inactive?: boolean;
   frame?: 0 | 1;
-  /** 머리 위 말풍선 */
   bubble?: string;
   className?: string;
 };
 
-/**
- * 친구 레이스의 한 줄. 높이 64px = 줄노트 두 칸이라 배경 줄과 발이 맞물린다.
- * 랭킹·이름·횟수 / 트랙 / 집 아이콘 세 칸.
- * 트랙에는 단계 랜드마크(자리 … 지하철)가 점선 위에 옅게 서 있고 졸라맨이 그 앞을 지나간다.
- */
-export function RaceLane({
-  rank,
-  name,
-  count,
-  isMe = false,
-  inactive = false,
-  frame = 0,
-  bubble,
-  className,
-}: RaceLaneProps) {
+/** Ranking details and one rail with every landmark, including the destination house. */
+export function RaceLane({ rank, name, count, isMe = false, inactive = false, frame = 0, bubble, className }: RaceLaneProps) {
   const stage = stageOf(count);
-  const running = useRaceMotion(count);
-  const position = `clamp(36px, ${trackPositionOf(inactive ? 0 : count)}, calc(100% - 36px))`;
-
-  return (
-    <div
-      className={cn(
-        "grid h-[64px] shrink-0 grid-cols-[86px_1fr_28px] items-end",
-        className,
-      )}
-    >
-      <div className="pb-1.5 leading-none">
-        <div className="font-note text-sm text-pencil-soft">
-          {rank}위{" "}
-          {rank === 1 && (
-            <CrownIcon size={14} className="inline -mb-px text-marker" />
-          )}
-        </div>
-        <div className="whitespace-nowrap text-lg font-bold">
-          <span className={cn(isMe && "hl")}>{name}</span>
-        </div>
-        <div className="tabular whitespace-nowrap text-[15px] text-pencil">
-          {count}번 · {inactive ? "안 옴" : stage.short}
-        </div>
+  return <div className={cn("grid h-16 shrink-0 grid-cols-[86px_minmax(0,1fr)] items-end", className)}>
+    <div className="pb-1.5 leading-none">
+      <div className="font-note text-sm text-pencil-soft">
+        {rank}위{" "}
+        {rank === 1 && <CrownIcon size={14} className="inline -mb-px text-marker" />}
       </div>
-
-      <div className="relative h-[64px]">
-        <div className="absolute inset-x-0 bottom-[5px] border-t-[1.5px] border-dashed border-pencil-soft opacity-55" />
-        {TICK_STAGES.map((s) => (
-          <span
-            key={s.key}
-            aria-hidden="true"
-            className={cn(
-              "absolute bottom-[2px] h-2 border-l border-pencil-soft",
-              count >= s.threshold ? "opacity-70" : "opacity-40",
-            )}
-            style={{ left: trackPositionOf(s.threshold) }}
-          />
-        ))}
-        {bubble && (
-          <div
-            className="absolute bottom-[52px] -translate-x-[30%]"
-            style={{ left: position }}
-          >
-            <SpeechBubble>{bubble}</SpeechBubble>
-          </div>
-        )}
-        <div
-          className="absolute bottom-1.5 -translate-x-1/2 transition-[left] duration-300 ease-[steps(3)]"
-          style={{ left: position }}
-        >
-          <RaceScene
-            count={inactive ? 0 : count}
-            running={!inactive && running}
-            size={44}
-            frame={frame}
-            className={cn(inactive && "opacity-35")}
-          />
-        </div>
+      <div className="truncate text-lg font-bold" title={name}>
+        <span className={cn(isMe && "hl")}>{name}</span>
       </div>
-
-      <HouseIcon size={24} className="mb-1 text-marker" />
+      <div className="tabular truncate text-[15px] text-pencil" title={`${count}번 · ${inactive ? "안 옴" : stage.short}`}>
+        {count}번 · {inactive ? "안 옴" : stage.short}
+      </div>
     </div>
-  );
+    <RaceTrack count={inactive ? 0 : count} frame={frame} compact inactive={inactive} bubble={bubble} />
+  </div>;
 }

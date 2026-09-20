@@ -2,7 +2,7 @@ import { Stickman } from "@/components/stickman";
 import { cn } from "@/lib/cn";
 import { poseOf, stageOf, type StageKey } from "../stages";
 
-const CAPTIONS: Record<StageKey, [string, string]> = {
+export const SCENE_CAPTIONS: Record<StageKey, [string, string]> = {
   seat: ["책상 앞에 앉아 있어요", "책상에서 일어나 달려요"],
   elevator: ["엘리베이터 안에서 기다려요", "엘리베이터 문을 열고 달려 나와요"],
   lobby: ["로비 안에서 기다려요", "로비 문을 열고 달려 나와요"],
@@ -11,10 +11,11 @@ const CAPTIONS: Record<StageKey, [string, string]> = {
   home: ["집에서 침대에 누워 쉬어요", "집에서 침대에 누워 쉬어요"],
 };
 
-/** A small scene travels with the progress marker; changing pose never resets progress. */
-export function RaceScene({ count, running = false, frame = 0, size = 64, className }: {
+/** A fixed landmark. Its waiting occupant can leave while the furniture stays put. */
+export function RaceScene({ count, running = false, occupied = true, frame = 0, size = 64, className }: {
   count: number;
   running?: boolean;
+  occupied?: boolean;
   frame?: 0 | 1;
   /** Scene height in pixels. */
   size?: number;
@@ -30,7 +31,10 @@ export function RaceScene({ count, running = false, frame = 0, size = 64, classN
       fill="none" stroke="currentColor" strokeWidth="1.7"
       strokeLinecap="round" strokeLinejoin="round"
       className={cn("block overflow-visible text-pencil", className)}
-      role="img" aria-label={CAPTIONS[stage][moving ? 1 : 0]}
+      role={occupied ? "img" : undefined}
+      aria-label={occupied ? SCENE_CAPTIONS[stage][moving ? 1 : 0] : undefined}
+      aria-hidden={!occupied}
+      data-stage={stage}
     >
       {stage === "seat" && <g transform="translate(8 10)">
         <path d="M7 22 Q5.5 28 8 35 M8 35 Q16 36 25 35 M16 36 L16 52 M8 55 Q16 50 23 55" />
@@ -56,9 +60,10 @@ export function RaceScene({ count, running = false, frame = 0, size = 64, classN
         <circle cx="17" cy="12" r="4" fill={moving ? "none" : "currentColor"} />
         <circle cx="17" cy="24" r="4" fill={moving ? "currentColor" : "none"} />
         <text x="32" y="12" stroke="none" fill="currentColor" className="font-note" fontSize="13">{moving ? "건너기" : "대기"}</text>
-        <path d="M34 69 l5 -7 h9 l-5 7 Z M53 69 l5 -7 h9 l-5 7 Z M72 69 l5 -7 h9 l-5 7 Z" opacity=".5" />
+        <path d="M32 69 l4 -7 h6 l-4 7 Z M44 69 l4 -7 h6 l-4 7 Z M56 69 l4 -7 h6 l-4 7 Z" opacity=".5" />
       </>}
-      {stage === "home" ? <>
+      {stage === "home" && <path d="M2 28 L54 3 L106 28 M9 26 V67 H101 V26" />}
+      {occupied && (stage === "home" ? <>
         <path d="M7 32 V66 M7 55 Q54 53 101 55 V66 M7 61 H101 M101 46 V60" />
         <path d="M10 49 Q18 44 29 49 L29 54 H10 Z" fill="var(--paper-2)" />
         <g transform="translate(9 28)"><Stickman pose="lie" size={58} /></g>
@@ -71,7 +76,7 @@ export function RaceScene({ count, running = false, frame = 0, size = 64, classN
           <g className="race-run-first"><Stickman pose="run" size={60} frame={frame} /></g>
           <g className="race-run-second"><Stickman pose="run" size={60} frame={frame === 0 ? 1 : 0} /></g>
         </> : <Stickman pose={poseOf(count)} size={doorway ? 43 : 60} frame={frame} />}
-      </g>}
+      </g>)}
       {doorway && <>
         {/* Translucent doors keep the waiting passenger visible inside. */}
         <path d="M18 22 H37 V67 H18 Z M22 29 H32 V43 H22 Z"
