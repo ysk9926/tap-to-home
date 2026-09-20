@@ -6,7 +6,6 @@ import { Stickman, STICKMAN_POSES, type StickmanPose } from "@/components/stickm
 import { TapButton } from "@/components/tap-button";
 import { StageStrip } from "@/features/race/components/stage-strip";
 import { RaceLane } from "@/features/race/components/race-lane";
-import { RaceScene } from "@/features/race/components/race-scene";
 import { HOME_THRESHOLD, STAGES, stageOf } from "@/features/race/stages";
 
 /** 탭 카운트와 걷기 프레임을 한 곳에서 관리하는 훅. 데모용 */
@@ -71,20 +70,6 @@ export function TapDemo() {
       </div>
     </div>
   );
-}
-
-export function RaceSceneSheet() {
-  return <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
-    {STAGES.map((stage) => <div key={stage.key} className="font-note text-lg">
-      <p>{stage.label} · {stage.threshold.toLocaleString()}회</p>
-      <StageStrip count={stage.threshold} name="나" />
-      <RaceLane rank={1} name="나" count={stage.threshold} className="mb-4" />
-      <div className="mt-2 flex flex-wrap gap-4">
-        <div><RaceScene count={stage.threshold} size={72} /><p>대기</p></div>
-        {stage.key !== "home" && <div><RaceScene count={stage.threshold} running size={72} /><p>탭하면 달리기</p></div>}
-      </div>
-    </div>)}
-  </div>;
 }
 
 /** 6포즈 + 2프레임 스톱모션 재생 */
