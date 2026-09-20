@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
+import { softDeleteAccount } from "./server/delete-account";
 
 export const NAME_MIN = 1;
 export const NAME_MAX = 12;
@@ -43,4 +44,24 @@ export async function updateNotifyAction(formData: FormData): Promise<void> {
     },
   });
   revalidatePath("/my/profile");
+}
+
+/**
+ * 계정 탈퇴. 오조작을 막기 위해 자기 아이디를 정확히 입력해야 한다.
+ * 성공하면 세션이 사라지므로 이후 요청은 /login 으로 튕긴다.
+ */
+export async function deleteAccountAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await getCurrentUser(await headers());
+  if (!user) redirect("/login");
+
+  const typed = String(formData.get("confirmUsername") ?? "").trim().toLowerCase();
+  if (typed !== user.username.toLowerCase()) {
+    return { error: "아이디가 맞지 않아요" };
+  }
+
+  await softDeleteAccount(user.id);
+  redirect("/login");
 }
