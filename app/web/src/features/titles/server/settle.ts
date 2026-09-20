@@ -33,8 +33,18 @@ function toTitleIds(ids: string[]): TitleId[] {
  * 별도 클라이언트로 읽으면 진행 중인 정산마다 커넥션을 2개씩 잡아먹는다.)
  */
 export async function settleToday(user: CurrentUser, now: Date = new Date()): Promise<SettleResult> {
-  const runDate = kstDate(now);
+  return settleRun(user, kstDate(now), now);
+}
 
+/**
+ * 특정 날짜(KST)의 정산. 자정 크론은 어제 날짜로, 화면은 오늘 날짜로 부른다.
+ * `runDate` 는 `kstDate()` 가 만든 UTC 자정 Date 여야 한다 (`@db.Date` 컬럼 값).
+ */
+export async function settleRun(
+  user: CurrentUser,
+  runDate: Date,
+  now: Date = new Date(),
+): Promise<SettleResult> {
   return prisma.$transaction(async (tx) => {
     // 1. 오늘 run 을 보장하고
     const { id } = await tx.dailyRun.upsert({
@@ -72,7 +82,9 @@ export async function settleToday(user: CurrentUser, now: Date = new Date()): Pr
     const titleIds = evaluateTitles({ taps: run.tapEvents, total: run.tapCount, firstTapAt: run.firstTapAt });
     const primaryTitleId = pickPrimary(titleIds);
 
-    const race = await getRaceToday(user, now, tx);
+    // 랭킹은 정산 대상 날짜 기준이어야 한다. 크론은 자정을 넘긴 뒤 어제를 정산하므로
+    // `now` 를 그대로 넘기면 아직 아무도 누르지 않은 오늘 랭킹이 저장된다.
+    const race = await getRaceToday(user, runDate, tx);
     const rank = race.racers.findIndex((r) => r.isMe) + 1;
     const rankTotal = race.racers.length;
 

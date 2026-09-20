@@ -4,7 +4,7 @@ import { kstDate } from "@/lib/kst";
 import { recordTaps, RunSettledError } from "@/features/race/server/record-taps";
 import { createTestUser, deleteTestUsers } from "../../../../test/db";
 import { getCollection } from "./collection";
-import { settleToday } from "./settle";
+import { settleRun, settleToday } from "./settle";
 import { getTodaySummary } from "./today-summary";
 
 const MORNING = new Date("2026-09-19T00:00:00Z"); // 09:00 KST
@@ -58,5 +58,25 @@ describe("settleToday", () => {
 
   it("rejects further taps after settlement, agreeing with recordTaps on 'settled'", async () => {
     await expect(recordTaps(me.id, 1, EVENING)).rejects.toBeInstanceOf(RunSettledError);
+  });
+
+  it("settles a given date and ranks by that date's taps", async () => {
+    const other = await createTestUser("settleday");
+    try {
+      const user = { id: other.id, name: other.name, username: other.username };
+      await recordTaps(other.id, 1200, MORNING);
+      // 자정을 넘긴 시각에 어제(MORNING 이 속한 날) 를 정산한다
+      const afterMidnight = new Date("2026-09-19T16:00:00Z"); // 09-20 01:00 KST
+      const r = await settleRun(user, kstDate(MORNING), afterMidnight);
+      expect(r.alreadySettled).toBe(false);
+      expect(r.rankTotal).toBe(1);
+
+      const saved = await prisma.dailyResult.findFirstOrThrow({
+        where: { dailyRun: { userId: other.id, runDate: kstDate(MORNING) } },
+      });
+      expect(saved.rank).toBe(1);
+    } finally {
+      await deleteTestUsers([other.id]);
+    }
   });
 });
