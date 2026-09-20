@@ -1,6 +1,7 @@
 import "server-only";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import type { Prisma } from "@/generated/prisma/client";
 import { kstDate, todayKst } from "@/lib/kst";
 import { listFriendIds } from "@/features/friends/server/list-friend-ids";
@@ -19,7 +20,7 @@ export async function getRaceToday(
   const friendIds = await listFriendIds(user.id, db);
 
   const users = await db.user.findMany({
-    where: { id: { in: [user.id, ...friendIds] } },
+    where: { id: { in: [user.id, ...friendIds] }, ...ACTIVE_USER },
     select: {
       id: true,
       name: true,

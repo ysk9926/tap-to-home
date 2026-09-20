@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { kstDate } from "@/lib/kst";
 import { listFriendIds } from "./list-friend-ids";
 
@@ -44,7 +45,7 @@ export async function listFriends(userId: string, now: Date = new Date()): Promi
   const ids = await listFriendIds(userId);
   if (ids.length === 0) return [];
   const users = await prisma.user.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, ...ACTIVE_USER },
     select: {
       ...USER_FIELDS,
       dailyRuns: { where: { runDate: kstDate(now) }, select: { tapCount: true } },
@@ -95,7 +96,7 @@ export async function listBlocked(userId: string): Promise<BlockedUser[]> {
 export async function searchUser(rawUsername: string, selfId: string): Promise<FoundUser | null> {
   const username = normalizeUsername(rawUsername);
   if (!username) return null;
-  const user = await prisma.user.findUnique({ where: { username }, select: USER_FIELDS });
+  const user = await prisma.user.findFirst({ where: { username, ...ACTIVE_USER }, select: USER_FIELDS });
   if (!user || user.id === selfId) return null;
   const blocked = await prisma.friendship.findFirst({
     where: { status: "blocked", ...betweenWhere(selfId, user.id) },

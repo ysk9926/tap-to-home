@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
@@ -9,7 +10,13 @@ import type { Prisma } from "@/generated/prisma/client";
  */
 export async function listFriendIds(userId: string, db: Prisma.TransactionClient = prisma): Promise<string[]> {
   const rows = await db.friendship.findMany({
-    where: { status: "accepted", OR: [{ requesterId: userId }, { addresseeId: userId }] },
+    where: {
+      status: "accepted",
+      OR: [
+        { requesterId: userId, addressee: ACTIVE_USER },
+        { addresseeId: userId, requester: ACTIVE_USER },
+      ],
+    },
     select: { requesterId: true, addresseeId: true },
   });
   return [...new Set(rows.map((r) => (r.requesterId === userId ? r.addresseeId : r.requesterId)))];
