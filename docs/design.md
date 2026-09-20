@@ -40,6 +40,8 @@
 | UI | Gaegu 400/700 | `font-ui` (기본) | 제목·본문·버튼·수치 |
 | Note | Nanum Pen Script | `font-note` | 말풍선·메모·힌트·눈금 |
 
+관리자 화면은 같은 줄노트 톤을 유지하되 역할에 따라 서체를 나눈다. 화면 제목·메뉴·버튼은 `font-ui`, 짧은 관찰 메모는 `font-note`를 쓴다. 지표 수치, 날짜, 차트 축, 필터와 표는 `Apple SD Gothic Neo`, `Malgun Gothic` 순서의 한국어 시스템 산세리프와 `tabular-nums`를 써서 촘촘한 운영 데이터의 판독성을 확보한다.
+
 수치는 항상 `tabular`.
 
 ## 컴포넌트 (`src/components/`)

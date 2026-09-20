@@ -7,6 +7,9 @@
 | 서버 상태 | TanStack Query | v5 | 레이스·랭킹 폴링/실시간 캐시, 낙관적 업데이트 |
 | 스타일 | Tailwind CSS | v4 | 테마 토큰은 `globals.css` `@theme` 에 정의 |
 | 인증 | better-auth 1.7 (+ username 플러그인) | 1.7 | 아이디+비밀번호 개방형 로그인, Prisma 어댑터 |
+| 관리자 인증 | 독립 better-auth 인스턴스·마스터 계정 | 1.7 | `/admin/login`, 별도 인증 테이블·쿠키·세션 (ADR 0010) |
+| 관리자 차트 | react-chartjs-2 + Chart.js | 5 / 4 | 일별 추이·구간 도달·활성화·소셜 분석, 데이터 표 병행 (ADR 0009) |
+| 운영 CLI | tsx | 4 | 마스터 생성·비밀번호 재설정·비활성화용 TypeScript 명령 실행 |
 | DB | PostgreSQL (Supabase) | 17 | 로컬은 docker compose, 배포는 Supabase Postgres. 연결 규칙은 `deploy.md` |
 | 실시간 | Supabase Realtime (broadcast) | supabase-js 2 | 친구 위치 전파. Supabase Auth/RLS 는 사용 안 함 (`decisions/0002`) |
 | ORM | Prisma 7 + @prisma/adapter-pg | 7.10 | better-auth 공식 어댑터, `prisma/migrations` 에 SQL 이 남음. 연결 URL 은 `prisma.config.ts` (`decisions/0003`) |
@@ -26,6 +29,7 @@
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 브라우저 Realtime 구독 |
 | `SUPABASE_SECRET_KEY` | 서버에서 채널 브로드캐스트. 서버 전용 |
 | `BETTER_AUTH_SECRET` | 세션 서명 키 (`openssl rand -base64 32`) |
+| `ADMIN_AUTH_SECRET` | 일반 인증 키와 다른 32자 이상 관리자 전용 비밀키. 미설정 시 관리자 인증만 503 |
 | `BETTER_AUTH_URL` | 서버가 인식하는 자신의 URL |
 | `NEXT_PUBLIC_APP_URL` | 브라우저·웹뷰가 접근하는 URL |
 

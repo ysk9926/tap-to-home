@@ -13,6 +13,9 @@ auth 테이블(`user`, `session`, `account`, `verification`)은 better-auth 계�
 | deletedAt | timestamptz null | 소프트 삭제. 채워지면 로그인·검색·랭킹·친구 목록에서 제외한다. row 와 friendship 은 남긴다 |
 | notifySignal | boolean not null default true | 퇴근 신호 푸시 수신 여부 (F2) |
 | notifySettlement | boolean not null default true | 정산 결과 푸시 수신 여부 (F3) |
+| suspendedAt | timestamptz null | 관리자 이용 정지. 탈퇴와 별도이며 일반 인증·친구·레이스·신호·푸시·정산에서 제외 |
+| suspensionReason | text null | 관리자 정지 사유 |
+| analyticsExcluded | boolean not null default false | 운영·테스트용 일반 계정을 제품 통계에서 제외 |
 
 `deletedAt` 은 조회 시점에 거른다. 필터를 빠뜨려 탈퇴 유저가 유령으로 남는 것을 막기 위해
 조건을 `src/lib/db/active-user.ts` 의 `ACTIVE_USER` 상수 하나로 모으고, 이를 쓰는 네 지점
@@ -108,3 +111,19 @@ pk(userId, titleId). 도감 카운트 = count(*) / catalog 길이.
 | updatedAt | timestamptz | 앱이 올릴 때마다 갱신. 오래된 행을 정리할 때 기준 |
 
 발송이 `UNREGISTERED` 를 돌려주면 그 행을 지운다. 앱은 실행할 때마다 토큰을 올리고, 서버는 upsert 한다.
+
+## 관리자 인증·운영 (F5, ADR 0010)
+
+`admin_user`, `admin_session`, `admin_account`, `admin_verification`은 better-auth 코어와 username 플러그인의 필드 계약을 유지하는 별도 인증 모델이다. 일반 User와 관계가 없으며 마스터 신원의 내부 ID는 `master`로 고정한다. AdminUser에는 `disabledAt`을 추가한다. 세션 수명은 최대 8시간이며 비밀번호 교체·비활성화 시 전부 폐기한다. 일반 계정의 role 승격은 없다.
+
+`admin_login_attempt`는 관리자 로그인 시도의 공유 제한이다. `key`(PK), `windowStartedAt`, `count`를 저장하며 서버에서 원자적으로 갱신한다. 원문 IP·비밀번호는 저장하지 않는다.
+
+`admin_audit_log`는 `id`, `actorAdminId`(AdminUser FK), `targetUserId`(User FK), `action`, `reason`, `before`/`after`(허용 필드만 JSON), `createdAt`을 저장한다. 계정 상태·세션 변경과 같은 트랜잭션으로 기록하며 대상/시각 인덱스를 둔다. FK 삭제는 Restrict로 조치 이력을 보호한다.
+
+## 접속·제품 분석 (F5)
+
+`analytics_config`: `id`(PK, `product`), `startedAt`. 수집 첫 실행 때 생성하며 기존 활동을 방문으로 소급하지 않는다.
+
+`user_daily_activity`: `userId`(User FK), `activityDate`(KST date)의 복합 PK, `firstSeenAt`, `lastSeenAt`. 날짜/사용자 인덱스를 둔다. 전경 방문과 승인된 탭에서 기록하고 lastSeen은 최대 5분에 한 번 갱신한다. 탈퇴·정지는 과거 활동을 지우지 않는다. User 물리 삭제 시 Cascade.
+
+`product_event`: `id`(uuid PK), `dedupeKey`(unique nullable), `userId`(행위자 FK), `otherUserId`(상대 FK nullable), `type`(text), `entityId`(text), `occurredAt`. 타입/시각과 사용자/시각 인덱스. 친구 생성·수락·거절·취소·삭제·차단·해제를 도메인 변경과 같은 트랜잭션으로 기록한다. 결과 상세 열람은 `result_viewed`이고 dedupeKey로 사용자/결과당 최초 한 번만 저장한다. 행위자 물리 삭제 시 Cascade, 상대 물리 삭제 시 SetNull. 일반 `seenAt`과 별도다.

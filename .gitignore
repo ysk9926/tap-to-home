@@ -22,3 +22,7 @@ dist/
 
 # logs
 *.log
+
+# tool + build artifacts
+.playwright-cli/
+output/

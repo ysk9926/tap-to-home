@@ -30,6 +30,7 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 | `DATABASE_URL` | Supabase transaction pooler | 동일 (또는 브랜치용 별도 프로젝트) |
 | `DIRECT_URL` | 불필요 (빌드에서 마이그레이션 안 함. `build` 앞단의 `prisma generate` 는 DB 에 접속하지 않음) | 불필요 |
 | `BETTER_AUTH_SECRET` | 새로 생성 | Production 과 다른 값 |
+| `ADMIN_AUTH_SECRET` | 일반 인증과 다른 32자 이상 랜덤 값 | Production과 다른 값 |
 | `BETTER_AUTH_URL` | `https://<production-domain>` | 비움 → 코드가 `VERCEL_URL` 로 대체 |
 | `NEXT_PUBLIC_APP_URL` | `https://<production-domain>` | 비움 가능 |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase 값 | 동일 |
@@ -54,6 +55,29 @@ Prisma 클라이언트는 `src/generated/prisma` 에 생성되고 커밋하지 �
 flutter build ios     --dart-define=WEB_URL=https://<production-domain>
 flutter build apk     --dart-define=WEB_URL=https://<production-domain>
 ```
+
+## 관리자 페이지 배포·초기 설정 (F5, ADR 0010)
+
+관리자 로그인은 `/admin/login`, 대시보드는 `/admin`이다. 일반 계정으로는 접근할 수 없다. 회원가입 화면에서 마스터를 생성하지 않는다.
+
+1. 대상 DB를 확인하고 새 앱 배포 전에 `pnpm db:deploy`로 `20260920093058_admin_dashboard` 및 이후 마이그레이션을 적용한다. 로컬 개발용 생성·적용 명령은 `pnpm db:migrate`다.
+2. 대상 환경에 `ADMIN_AUTH_SECRET`을 넣는다. `openssl rand -base64 32`로 생성하며 `BETTER_AUTH_SECRET`과 달라야 한다. 비밀키가 없거나 짧으면 일반 앱은 계속 동작하고 관리자 인증은 설정 필요 응답을 반환한다.
+3. `BETTER_AUTH_URL`을 실제 접속 출처로 맞춘다. Preview에서 비워 둔 경우 `VERCEL_URL`을 사용한다. 관리자 요청에는 출처 검사가 적용되므로 다른 도메인으로 접속하면 로그인·변경 요청이 거절된다.
+4. 아래 명령을 대화형 터미널에서 실행한다. `app/web/.env`의 `DATABASE_URL`을 읽으며 처음 출력되는 DB 호스트·DB명을 확인한다. 비밀번호는 화면에 표시되지 않는다.
+
+```sh
+pnpm admin:master create
+```
+
+마스터 아이디는 영문·숫자·`_` 3~30자, 비밀번호는 12~128자다. 계정이 이미 있으면 변경 없이 종료한다. 배포·마이그레이션 실행만으로 마스터가 생성되지 않는다.
+
+비밀번호를 잊었거나 교체할 때는 `pnpm admin:master reset`을 사용한다. 새 비밀번호 입력 후 `RESET`을 확인하면 모든 관리자 세션이 만료되고 비활성화된 마스터도 복구된다. 긴급 중지에는 `pnpm admin:master disable`을 실행하고 `DISABLE`을 확인한다. 이 절차는 일반 사용자 계정·세션에 영향을 주지 않는다.
+
+마스터 로그인은 서버 간 공유하는 DB 제한으로 전체 1분에 10회까지 허용한다. 단일 운영자용 제한으로, 한 곳에서 시도가 몰리면 다른 브라우저도 최대 1분 기다릴 수 있다. 세션은 로그인 시점부터 최대 8시간이며 자동 연장하지 않는다. 관리자 인증 응답·조회 응답은 private/no-store다.
+
+방문·행동 수집을 처음 실행하면 `analytics_config.startedAt`을 기록한다. 과거 탭 기록은 플레이 통계로만 읽으며 방문 기록으로 변환하지 않는다. 수집 전 구간·불완전한 D1/D7·7일/30일 창은 `수집 중`으로 표시한다. 결과 상세 열람률도 계측 이전 기간을 포함하면 표시하지 않는다. 기본 최근 7일에 가입한 코호트는 D7 관찰이 아직 끝나지 않으므로, D7 비교에는 최근 30일·90일 조회를 사용한다. 운영 테스트용 일반 계정은 사용자 상세의 분석 제외 조치로 통계에서 뺄 수 있다. 제외 변경에는 사유와 감사 이력이 남고, 해당 계정의 방문 원본은 유지한다.
+
+로컬 테스트 DB에서는 마스터 초기화·재설정 테스트가 일시적인 마스터를 만들고 정리한다. 이미 운영용 마스터가 있는 DB에는 해당 테스트를 실행하지 말고 별도 `TEST_DATABASE_URL`을 사용한다. 원격 DB 마이그레이션·실제 마스터 생성·운영 배포는 릴리스 시 수행한다.
 
 ## 조회 효율 개선 검증 (2026-09-20)
 
