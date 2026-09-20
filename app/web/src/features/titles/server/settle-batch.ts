@@ -1,4 +1,5 @@
 import "server-only";
+import { sendSettlementPush, type SettlementPushItem } from "@/features/push/server/send-settlement-push";
 import { prisma } from "@/lib/db";
 import { runDateToYmd } from "@/lib/kst";
 import { settleRun } from "./settle";
@@ -29,7 +30,7 @@ const CONCURRENCY = 5;
 export async function settleAllForDate(runDate: Date, now: Date = new Date()): Promise<BatchReport> {
   const targets = await prisma.dailyRun.findMany({
     where: { runDate, tapCount: { gt: 0 }, result: null, user: { deletedAt: null } },
-    select: { id: true, user: { select: { id: true, name: true, username: true } } },
+    select: { id: true, tapCount: true, user: { select: { id: true, name: true, username: true } } },
   });
 
   const report: BatchReport = {
@@ -38,29 +39,45 @@ export async function settleAllForDate(runDate: Date, now: Date = new Date()): P
     settled: 0,
     failed: [],
   };
+  const pushes: SettlementPushItem[] = [];
 
   for (let i = 0; i < targets.length; i += CONCURRENCY) {
     const chunk = targets.slice(i, i + CONCURRENCY);
     const outcomes = await Promise.all(
       chunk.map(async (run) => {
         try {
-          await settleRun(
+          const result = await settleRun(
             { id: run.user.id, name: run.user.name, username: run.user.username ?? "" },
             runDate,
             now,
           );
-          return { id: run.id, ok: true };
+          return {
+            id: run.id,
+            ok: true,
+            push: {
+              userId: run.user.id,
+              primaryTitleId: result.primaryTitleId,
+              total: run.tapCount,
+            } satisfies SettlementPushItem,
+          };
         } catch (error) {
           console.error(`[settle-batch] failed for run ${run.id}`, error);
-          return { id: run.id, ok: false };
+          return { id: run.id, ok: false, push: null };
         }
       }),
     );
     for (const outcome of outcomes) {
-      if (outcome.ok) report.settled += 1;
-      else report.failed.push(outcome.id);
+      if (outcome.ok) {
+        report.settled += 1;
+        if (outcome.push) pushes.push(outcome.push);
+      } else {
+        report.failed.push(outcome.id);
+      }
     }
   }
+
+  // 푸시는 정산이 전부 끝난 뒤에. 정산 트랜잭션이 네트워크 대기에 묶이면 안 된다
+  await sendSettlementPush(pushes, report.runDate);
 
   return report;
 }

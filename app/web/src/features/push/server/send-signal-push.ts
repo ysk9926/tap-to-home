@@ -29,7 +29,14 @@ export async function sendSignalPush(
   if (pending.length === 0) return;
 
   const receiverIds = [...new Set(pending.map((s) => s.receiverId))];
-  const tokensByUser = await listPushTokens(receiverIds);
+  // 알림을 끈 사람에게는 보내지 않는다 (/my/profile). 인앱 토스트는 이 설정과 무관하다
+  const optedIn = await prisma.user.findMany({
+    where: { id: { in: receiverIds }, notifySignal: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (optedIn.length === 0) return;
+
+  const tokensByUser = await listPushTokens(optedIn.map((u) => u.id));
   if (tokensByUser.size === 0) return;
 
   const { suffix } = signalMessage(senderName, level);
