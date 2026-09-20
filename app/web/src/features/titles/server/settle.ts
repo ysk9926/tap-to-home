@@ -1,6 +1,7 @@
 import "server-only";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { kstDate } from "@/lib/kst";
 import { getRaceToday } from "@/features/race/server/today";
 import { isTitleId, type TitleId } from "../catalog";
@@ -46,6 +47,9 @@ export async function settleRun(
   now: Date = new Date(),
 ): Promise<SettleResult> {
   return prisma.$transaction(async (tx) => {
+    const active = await tx.user.findFirst({ where: { id: user.id, ...ACTIVE_USER }, select: { id: true } });
+    if (!active) throw new Error("활성 사용자만 정산할 수 있어요");
+
     // 1. 오늘 run 을 보장하고
     const { id } = await tx.dailyRun.upsert({
       where: { userId_runDate: { userId: user.id, runDate } },

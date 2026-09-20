@@ -1,5 +1,7 @@
 import "server-only";
+import { recordActivity } from "@/features/analytics/server/activity";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 import { kstDate } from "@/lib/kst";
 import { HOME_THRESHOLD, stageIndexOf } from "../stages";
 
@@ -28,6 +30,9 @@ export async function recordTaps(
   const runDate = kstDate(now);
 
   return prisma.$transaction(async (tx) => {
+    const active = await tx.user.findFirst({ where: { id: userId, ...ACTIVE_USER }, select: { id: true } });
+    if (!active) throw new Error("활성 사용자만 탭을 기록할 수 있어요");
+
     const run = await tx.dailyRun.upsert({
       where: { userId_runDate: { userId, runDate } },
       create: { userId, runDate },
@@ -44,6 +49,8 @@ export async function recordTaps(
 
     const accepted = Math.min(count, Math.max(0, HOME_THRESHOLD - run.tapCount));
     if (accepted === 0) return { tapCount: run.tapCount, stage: run.stage };
+
+    if (!run.firstTapAt) await recordActivity(userId, now, tx);
 
     const tapCount = run.tapCount + accepted;
     const stage = stageIndexOf(tapCount);

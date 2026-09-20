@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { ActivityTracker } from "@/features/analytics/components/activity-tracker";
 import { LiveSyncProvider } from "@/features/realtime/components/live-sync-provider";
 import { BottomNav } from "@/components/bottom-nav";
 import { Paper } from "@/components/paper";
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <SettlementWatcher result={unseen} />
         <FriendRequestWatcher settlementPending={unseen !== null} />
         <PushRegistrar />
+        <ActivityTracker userId={user.id} />
       </Paper>
     </LiveSyncProvider>
   );

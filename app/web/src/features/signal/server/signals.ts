@@ -2,6 +2,7 @@ import "server-only";
 import type { SignalLevel } from "@/components/signal-toast";
 import { listFriendIds } from "@/features/friends/server/list-friend-ids";
 import { prisma } from "@/lib/db";
+import { ACTIVE_USER } from "@/lib/db/active-user";
 
 /** 같은 등급은 같은 상대에게 10분에 한 번 (F2) */
 export const SIGNAL_COOLDOWN_MS = 10 * 60 * 1000;
@@ -9,7 +10,7 @@ export const SIGNAL_COOLDOWN_MS = 10 * 60 * 1000;
 export const UNREAD_WINDOW_MS = 10 * 60 * 1000;
 
 export type UnreadSignal = { id: string; senderName: string; level: SignalLevel; sentAt: string };
-export type SentSignal = { id: string; receiverId: string };
+export type SentSignal = { id: string; senderId: string; receiverId: string };
 export type MarkSignalsRead = (receiverId: string, ids: string[], now?: Date) => Promise<void>;
 
 export async function sendSignal(
@@ -17,6 +18,8 @@ export async function sendSignal(
   level: SignalLevel,
   now: Date = new Date(),
 ): Promise<{ delivered: string[]; signals: SentSignal[]; sentAt: Date }> {
+  const sender = await prisma.user.findFirst({ where: { id: senderId, ...ACTIVE_USER }, select: { id: true } });
+  if (!sender) return { delivered: [], signals: [], sentAt: now };
   const friendIds = await listFriendIds(senderId);
   if (friendIds.length === 0) return { delivered: [], signals: [], sentAt: now };
 
@@ -35,7 +38,7 @@ export async function sendSignal(
 
   const signals = await prisma.signal.createManyAndReturn({
     data: delivered.map((receiverId) => ({ senderId, receiverId, level, sentAt: now })),
-    select: { id: true, receiverId: true },
+    select: { id: true, senderId: true, receiverId: true },
   });
   return { delivered, signals, sentAt: now };
 }
@@ -44,7 +47,7 @@ export async function sendSignal(
 export async function markSignalsRead(receiverId: string, ids: string[], now: Date = new Date()): Promise<void> {
   if (ids.length === 0) return;
   await prisma.signal.updateMany({
-    where: { receiverId, id: { in: [...new Set(ids)] }, readAt: null },
+    where: { receiverId, id: { in: [...new Set(ids)] }, readAt: null, receiver: ACTIVE_USER },
     data: { readAt: now },
   });
 }
@@ -58,7 +61,13 @@ export async function markSignalsRead(receiverId: string, ids: string[], now: Da
  */
 export async function takeUnreadSignals(receiverId: string, now: Date = new Date()): Promise<UnreadSignal[]> {
   const rows = await prisma.signal.findMany({
-    where: { receiverId, readAt: null, sentAt: { gt: new Date(now.getTime() - UNREAD_WINDOW_MS) } },
+    where: {
+      receiverId,
+      readAt: null,
+      sentAt: { gt: new Date(now.getTime() - UNREAD_WINDOW_MS) },
+      receiver: ACTIVE_USER,
+      sender: ACTIVE_USER,
+    },
     orderBy: { sentAt: "asc" },
     select: { id: true, level: true, sentAt: true, sender: { select: { name: true } } },
   });

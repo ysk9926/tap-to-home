@@ -1,4 +1,6 @@
 import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
+import { recordProductEvent } from "@/features/analytics/server/events";
 import { prisma } from "@/lib/db";
 import { ACTIVE_USER } from "@/lib/db/active-user";
 import { kstDate } from "@/lib/kst";
@@ -41,6 +43,11 @@ function betweenWhere(a: string, b: string) {
   };
 }
 
+async function requireActiveUser(db: Prisma.TransactionClient, userId: string): Promise<void> {
+  const user = await db.user.findFirst({ where: { id: userId, ...ACTIVE_USER }, select: { id: true } });
+  if (!user) throw new FriendError("not_found", "그 사용자는 없어요");
+}
+
 export async function listFriends(userId: string, now: Date = new Date()): Promise<FriendSummary[]> {
   const ids = await listFriendIds(userId);
   if (ids.length === 0) return [];
@@ -63,7 +70,7 @@ export async function listFriends(userId: string, now: Date = new Date()): Promi
 /** 내가 받은 대기 중인 요청 (수락·거절 대상) */
 export async function listIncomingRequests(userId: string): Promise<FriendRequest[]> {
   const rows = await prisma.friendship.findMany({
-    where: { addresseeId: userId, status: "pending" },
+    where: { addresseeId: userId, status: "pending", addressee: ACTIVE_USER, requester: ACTIVE_USER },
     select: { id: true, createdAt: true, requester: { select: USER_FIELDS } },
     orderBy: { createdAt: "desc" },
   });
@@ -73,7 +80,7 @@ export async function listIncomingRequests(userId: string): Promise<FriendReques
 /** 내가 보낸 대기 중인 요청 (취소 대상) */
 export async function listOutgoingRequests(userId: string): Promise<FriendRequest[]> {
   const rows = await prisma.friendship.findMany({
-    where: { requesterId: userId, status: "pending" },
+    where: { requesterId: userId, status: "pending", requester: ACTIVE_USER, addressee: ACTIVE_USER },
     select: { id: true, createdAt: true, addressee: { select: USER_FIELDS } },
     orderBy: { createdAt: "desc" },
   });
@@ -83,7 +90,7 @@ export async function listOutgoingRequests(userId: string): Promise<FriendReques
 /** 내가 차단한 사람만. 나를 차단한 사람은 보여주지 않는다 (해제 권한이 없으므로) */
 export async function listBlocked(userId: string): Promise<BlockedUser[]> {
   const rows = await prisma.friendship.findMany({
-    where: { status: "blocked", blockedById: userId },
+    where: { status: "blocked", blockedById: userId, blockedBy: ACTIVE_USER, requester: ACTIVE_USER, addressee: ACTIVE_USER },
     select: { id: true, requester: { select: USER_FIELDS }, addressee: { select: USER_FIELDS } },
     orderBy: { respondedAt: "desc" },
   });
@@ -121,31 +128,40 @@ export async function requestFriend(
   now: Date = new Date(),
 ): Promise<RequestResult> {
   const username = normalizeUsername(rawUsername);
-  const target = await prisma.user.findUnique({ where: { username }, select: USER_FIELDS });
-  if (!target) throw new FriendError("not_found", "그 아이디는 없어요");
-  if (target.id === userId) throw new FriendError("self", "나 자신은 등록할 수 없어요");
-
-  const existing = await prisma.friendship.findFirst({
-    where: betweenWhere(userId, target.id),
-    select: { id: true, status: true, requesterId: true },
-  });
-  if (existing?.status === "accepted") throw new FriendError("already", "이미 친구예요");
-  if (existing?.status === "blocked") throw new FriendError("blocked", "요청을 보낼 수 없는 상대예요");
-  if (existing?.status === "pending") {
-    if (existing.requesterId === userId) throw new FriendError("requested", "이미 요청을 보냈어요");
-    // 엇갈린 요청: 상대가 먼저 보냈으니 수락으로 처리한다
-    return { kind: "accepted", friend: await acceptRequest(userId, existing.id, now) };
-  }
-
   try {
-    const created = await prisma.friendship.create({
-      data: { requesterId: userId, addresseeId: target.id, status: "pending" },
-      select: { id: true, createdAt: true },
+    return await prisma.$transaction(async (tx) => {
+      await requireActiveUser(tx, userId);
+      const target = await tx.user.findFirst({ where: { username, ...ACTIVE_USER }, select: USER_FIELDS });
+      if (!target) throw new FriendError("not_found", "그 아이디는 없어요");
+      if (target.id === userId) throw new FriendError("self", "나 자신은 등록할 수 없어요");
+
+      const existing = await tx.friendship.findFirst({
+        where: betweenWhere(userId, target.id),
+        select: { id: true, status: true, requesterId: true },
+      });
+      if (existing?.status === "accepted") throw new FriendError("already", "이미 친구예요");
+      if (existing?.status === "blocked") throw new FriendError("blocked", "요청을 보낼 수 없는 상대예요");
+      if (existing?.status === "pending") {
+        if (existing.requesterId === userId) throw new FriendError("requested", "이미 요청을 보냈어요");
+        return { kind: "accepted", friend: await acceptRequestWithDb(tx, userId, existing.id, now) };
+      }
+
+      const created = await tx.friendship.create({
+        data: { requesterId: userId, addresseeId: target.id, status: "pending" },
+        select: { id: true, createdAt: true },
+      });
+      await recordProductEvent(tx, {
+        userId,
+        otherUserId: target.id,
+        type: "friend_requested",
+        entityId: created.id,
+        occurredAt: now,
+      });
+      return {
+        kind: "requested" as const,
+        request: { id: created.id, user: toFoundUser(target), createdAt: created.createdAt.toISOString() },
+      };
     });
-    return {
-      kind: "requested",
-      request: { id: created.id, user: toFoundUser(target), createdAt: created.createdAt.toISOString() },
-    };
   } catch (e) {
     // 동시 중복 요청: unique(requesterId, addresseeId) 위반
     if (typeof e === "object" && e !== null && (e as { code?: unknown }).code === "P2002") {
@@ -161,18 +177,36 @@ export async function acceptRequest(
   requestId: string,
   now: Date = new Date(),
 ): Promise<FriendSummary> {
-  const row = await prisma.friendship.findFirst({
-    where: { id: requestId, addresseeId: userId, status: "pending" },
+  return prisma.$transaction((tx) => acceptRequestWithDb(tx, userId, requestId, now));
+}
+
+async function acceptRequestWithDb(
+  db: Prisma.TransactionClient,
+  userId: string,
+  requestId: string,
+  now: Date,
+): Promise<FriendSummary> {
+  await requireActiveUser(db, userId);
+  const row = await db.friendship.findFirst({
+    where: { id: requestId, addresseeId: userId, status: "pending", requester: ACTIVE_USER },
     select: { id: true, requester: { select: USER_FIELDS } },
   });
   if (!row) throw new FriendError("no_request", "처리할 요청이 없어요");
 
-  await prisma.friendship.update({
-    where: { id: row.id },
+  const updated = await db.friendship.updateMany({
+    where: { id: row.id, addresseeId: userId, status: "pending" },
     data: { status: "accepted", respondedAt: now },
   });
+  if (updated.count === 0) throw new FriendError("no_request", "처리할 요청이 없어요");
+  await recordProductEvent(db, {
+    userId,
+    otherUserId: row.requester.id,
+    type: "friend_accepted",
+    entityId: row.id,
+    occurredAt: now,
+  });
 
-  const run = await prisma.dailyRun.findUnique({
+  const run = await db.dailyRun.findUnique({
     where: { userId_runDate: { userId: row.requester.id, runDate: kstDate(now) } },
     select: { tapCount: true },
   });
@@ -188,27 +222,68 @@ export async function acceptRequest(
  * 받은 요청 거절 (F0-3). row 를 지워 상대가 다시 요청할 수 있게 둔다.
  * 상대에게 거절 사실을 알리지 않는다.
  */
-export async function declineRequest(userId: string, requestId: string): Promise<void> {
-  const { count } = await prisma.friendship.deleteMany({
-    where: { id: requestId, addresseeId: userId, status: "pending" },
+export async function declineRequest(userId: string, requestId: string, now: Date = new Date()): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await requireActiveUser(tx, userId);
+    const row = await tx.friendship.findFirst({
+      where: { id: requestId, addresseeId: userId, status: "pending", requester: ACTIVE_USER },
+      select: { id: true, requesterId: true },
+    });
+    if (!row) throw new FriendError("no_request", "처리할 요청이 없어요");
+    const removed = await tx.friendship.deleteMany({ where: { id: row.id, addresseeId: userId, status: "pending" } });
+    if (removed.count === 0) throw new FriendError("no_request", "처리할 요청이 없어요");
+    await recordProductEvent(tx, {
+      userId,
+      otherUserId: row.requesterId,
+      type: "friend_declined",
+      entityId: row.id,
+      occurredAt: now,
+    });
   });
-  if (count === 0) throw new FriendError("no_request", "처리할 요청이 없어요");
 }
 
 /** 내가 보낸 요청 취소 (F0-2) */
-export async function cancelRequest(userId: string, requestId: string): Promise<void> {
-  const { count } = await prisma.friendship.deleteMany({
-    where: { id: requestId, requesterId: userId, status: "pending" },
+export async function cancelRequest(userId: string, requestId: string, now: Date = new Date()): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await requireActiveUser(tx, userId);
+    const row = await tx.friendship.findFirst({
+      where: { id: requestId, requesterId: userId, status: "pending", addressee: ACTIVE_USER },
+      select: { id: true, addresseeId: true },
+    });
+    if (!row) throw new FriendError("no_request", "취소할 요청이 없어요");
+    const removed = await tx.friendship.deleteMany({ where: { id: row.id, requesterId: userId, status: "pending" } });
+    if (removed.count === 0) throw new FriendError("no_request", "취소할 요청이 없어요");
+    await recordProductEvent(tx, {
+      userId,
+      otherUserId: row.addresseeId,
+      type: "friend_cancelled",
+      entityId: row.id,
+      occurredAt: now,
+    });
   });
-  if (count === 0) throw new FriendError("no_request", "취소할 요청이 없어요");
 }
 
 /** 친구 삭제 (F0-4). 양쪽에서 사라지고 다시 요청할 수 있다 */
-export async function removeFriend(userId: string, friendId: string): Promise<void> {
-  const { count } = await prisma.friendship.deleteMany({
-    where: { status: "accepted", ...betweenWhere(userId, friendId) },
+export async function removeFriend(userId: string, friendId: string, now: Date = new Date()): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await Promise.all([requireActiveUser(tx, userId), requireActiveUser(tx, friendId)]);
+    const row = await tx.friendship.findFirst({
+      where: { status: "accepted", ...betweenWhere(userId, friendId) },
+      select: { id: true },
+    });
+    if (!row) throw new FriendError("not_found", "친구가 아니에요");
+    const removed = await tx.friendship.deleteMany({
+      where: { status: "accepted", ...betweenWhere(userId, friendId) },
+    });
+    if (removed.count === 0) throw new FriendError("not_found", "친구가 아니에요");
+    await recordProductEvent(tx, {
+      userId,
+      otherUserId: friendId,
+      type: "friend_removed",
+      entityId: row.id,
+      occurredAt: now,
+    });
   });
-  if (count === 0) throw new FriendError("not_found", "친구가 아니에요");
 }
 
 /**
@@ -217,35 +292,59 @@ export async function removeFriend(userId: string, friendId: string): Promise<vo
  */
 export async function blockUser(userId: string, targetId: string, now: Date = new Date()): Promise<void> {
   if (userId === targetId) throw new FriendError("self", "나 자신은 차단할 수 없어요");
-  const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
-  if (!target) throw new FriendError("not_found", "그 사용자는 없어요");
-
-  const existing = await prisma.friendship.findFirst({
-    where: betweenWhere(userId, targetId),
-    select: { id: true },
-  });
-  if (existing) {
-    await prisma.friendship.update({
-      where: { id: existing.id },
-      data: { status: "blocked", blockedById: userId, respondedAt: now },
+  await prisma.$transaction(async (tx) => {
+    await Promise.all([requireActiveUser(tx, userId), requireActiveUser(tx, targetId)]);
+    const existing = await tx.friendship.findFirst({
+      where: betweenWhere(userId, targetId),
+      select: { id: true },
     });
-    return;
-  }
-  await prisma.friendship.create({
-    data: {
-      requesterId: userId,
-      addresseeId: targetId,
-      status: "blocked",
-      blockedById: userId,
-      respondedAt: now,
-    },
+    const friendshipId = existing
+      ? (await tx.friendship.update({
+          where: { id: existing.id },
+          data: { status: "blocked", blockedById: userId, respondedAt: now },
+          select: { id: true },
+        })).id
+      : (await tx.friendship.create({
+          data: {
+            requesterId: userId,
+            addresseeId: targetId,
+            status: "blocked",
+            blockedById: userId,
+            respondedAt: now,
+          },
+          select: { id: true },
+        })).id;
+    await tx.friendship.deleteMany({
+      where: { id: { not: friendshipId }, ...betweenWhere(userId, targetId) },
+    });
+    await recordProductEvent(tx, {
+      userId,
+      otherUserId: targetId,
+      type: "friend_blocked",
+      entityId: friendshipId,
+      occurredAt: now,
+    });
   });
 }
 
 /** 차단 해제 (F0-4). 차단한 사람만 풀 수 있고, 풀면 친구가 아닌 상태로 돌아간다 */
-export async function unblockUser(userId: string, friendshipId: string): Promise<void> {
-  const { count } = await prisma.friendship.deleteMany({
-    where: { id: friendshipId, status: "blocked", blockedById: userId },
+export async function unblockUser(userId: string, friendshipId: string, now: Date = new Date()): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await requireActiveUser(tx, userId);
+    const row = await tx.friendship.findFirst({
+      where: { id: friendshipId, status: "blocked", blockedById: userId },
+      select: { id: true, requesterId: true, addresseeId: true },
+    });
+    if (!row) throw new FriendError("not_found", "차단한 상대가 아니에요");
+    const otherUserId = row.requesterId === userId ? row.addresseeId : row.requesterId;
+    const removed = await tx.friendship.deleteMany({ where: { id: row.id, status: "blocked", blockedById: userId } });
+    if (removed.count === 0) throw new FriendError("not_found", "차단한 상대가 아니에요");
+    await recordProductEvent(tx, {
+      userId,
+      otherUserId,
+      type: "friend_unblocked",
+      entityId: row.id,
+      occurredAt: now,
+    });
   });
-  if (count === 0) throw new FriendError("not_found", "차단한 상대가 아니에요");
 }

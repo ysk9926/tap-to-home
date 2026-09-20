@@ -35,6 +35,18 @@ describe("sendSignal", () => {
     const later = await sendSignal(s.id, "urgent", new Date(NOW.getTime() + SIGNAL_COOLDOWN_MS + 1));
     expect(later.delivered).toHaveLength(2);
   });
+
+  it("excludes suspended senders and receivers", async () => {
+    const at = new Date(NOW.getTime() + 20 * SIGNAL_COOLDOWN_MS);
+    await prisma.user.update({ where: { id: r2.id }, data: { suspendedAt: at } });
+    try {
+      expect((await sendSignal(s.id, "rescue", at)).delivered).toEqual([r1.id]);
+      await prisma.user.update({ where: { id: s.id }, data: { suspendedAt: at } });
+      expect((await sendSignal(s.id, "rescue", new Date(at.getTime() + SIGNAL_COOLDOWN_MS + 1))).delivered).toEqual([]);
+    } finally {
+      await prisma.user.updateMany({ where: { id: { in: [s.id, r2.id] } }, data: { suspendedAt: null } });
+    }
+  });
 });
 
 describe("takeUnreadSignals", () => {

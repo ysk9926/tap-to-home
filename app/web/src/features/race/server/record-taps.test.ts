@@ -85,4 +85,28 @@ describe("recordTaps", () => {
     expect(await recordTaps(userId, 1, new Date("2026-09-22T01:00:00Z")))
       .toEqual({ tapCount: 1, stage: 0 });
   });
+
+  it("uses only the first accepted tap as the activity fallback", async () => {
+    const day = new Date("2026-09-24T01:00:00Z");
+    await recordTaps(userId, 1, day);
+    await recordTaps(userId, 1, new Date(day.getTime() + 6 * 60_000));
+    const activity = await prisma.userDailyActivity.findUniqueOrThrow({
+      where: { userId_activityDate: { userId, activityDate: kstDate(day) } },
+    });
+    expect(activity.firstSeenAt).toEqual(day);
+    expect(activity.lastSeenAt).toEqual(day);
+  });
+
+  it("rejects a suspended member without writing a run or activity", async () => {
+    const suspended = await createTestUser("taps-suspended");
+    const day = new Date("2026-09-23T01:00:00Z");
+    await prisma.user.update({ where: { id: suspended.id }, data: { suspendedAt: day } });
+    try {
+      await expect(recordTaps(suspended.id, 1, day)).rejects.toThrow("활성 사용자");
+      expect(await prisma.dailyRun.count({ where: { userId: suspended.id } })).toBe(0);
+      expect(await prisma.userDailyActivity.count({ where: { userId: suspended.id } })).toBe(0);
+    } finally {
+      await deleteTestUsers([suspended.id]);
+    }
+  });
 });

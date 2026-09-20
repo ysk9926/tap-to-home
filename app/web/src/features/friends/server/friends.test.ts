@@ -108,6 +108,16 @@ describe("acceptRequest", () => {
     expect(await listOutgoingRequests(a.id)).toEqual([]);
   });
 
+  it("emits one acceptance when two handlers race for the same request", async () => {
+    const id = await sendRequest(a.id, b.username);
+    const outcomes = await Promise.allSettled([
+      acceptRequest(b.id, id, NOW),
+      acceptRequest(b.id, id, NOW),
+    ]);
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(await prisma.productEvent.count({ where: { entityId: id, type: "friend_accepted" } })).toBe(1);
+  });
+
   it("refuses the requester and anyone else — only the addressee may accept", async () => {
     const id = await sendRequest(a.id, b.username);
     await expect(acceptRequest(a.id, id, NOW)).rejects.toMatchObject({ code: "no_request" });
@@ -116,6 +126,48 @@ describe("acceptRequest", () => {
 });
 
 describe("declineRequest and cancelRequest", () => {
+  it.each(["decline", "cancel"])("allows only one transition when acceptance races with %s", async (action) => {
+    const id = await sendRequest(a.id, b.username);
+    // Hold the row so both handlers read pending, then queue acceptance first.
+    let release!: () => void;
+    let locked!: (pid: number) => void;
+    const releaseLock = new Promise<void>((resolve) => { release = resolve; });
+    const lockReady = new Promise<number>((resolve) => { locked = resolve; });
+    const lock = prisma.$transaction(async (tx) => {
+      const [connection] = await tx.$queryRaw<{ pid: number }[]>`SELECT pg_backend_pid() AS pid`;
+      await tx.$queryRaw`SELECT id FROM friendship WHERE id = ${id} FOR UPDATE`;
+      locked(connection.pid);
+      await releaseLock;
+    }, { timeout: 10_000 });
+    const pid = await lockReady;
+    const blocked = async () => {
+      const [row] = await prisma.$queryRaw<{ count: number }[]>`
+        WITH RECURSIVE waiting AS (
+          SELECT pid FROM pg_stat_activity WHERE ${pid} = ANY(pg_blocking_pids(pid))
+          UNION
+          SELECT a.pid FROM pg_stat_activity a JOIN waiting w ON w.pid = ANY(pg_blocking_pids(a.pid))
+        ) SELECT COUNT(*)::int AS count FROM waiting`;
+      return row.count;
+    };
+    const accepted = Promise.allSettled([acceptRequest(b.id, id, NOW)]);
+    let removed: Promise<PromiseSettledResult<void>[]> | undefined;
+    try {
+      await expect.poll(blocked).toBe(1);
+      removed = Promise.allSettled([action === "decline" ? declineRequest(b.id, id, NOW) : cancelRequest(a.id, id, NOW)]);
+      await expect.poll(blocked).toBe(2);
+    } finally {
+      release();
+      await lock;
+    }
+    const outcomes = [...await accepted, ...await removed!];
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    const events = await prisma.productEvent.findMany({ where: { entityId: id, type: { not: "friend_requested" } } });
+    expect(events).toHaveLength(1);
+    const friendship = await prisma.friendship.findUnique({ where: { id } });
+    if (events[0].type === "friend_accepted") expect(friendship?.status).toBe("accepted");
+    else expect(friendship).toBeNull();
+  });
+
   it("decline removes the request and lets the requester try again", async () => {
     const id = await sendRequest(a.id, b.username);
     await declineRequest(b.id, id);
@@ -136,9 +188,20 @@ describe("removeFriend", () => {
   it("removes the friendship from both sides and allows a new request", async () => {
     const id = await sendRequest(a.id, b.username);
     await acceptRequest(b.id, id, NOW);
+    await prisma.friendship.create({
+      data: { requesterId: b.id, addresseeId: a.id, status: "accepted", respondedAt: NOW },
+    });
     await removeFriend(b.id, a.id);
     expect(await listFriends(a.id, NOW)).toEqual([]);
     expect(await listFriends(b.id, NOW)).toEqual([]);
+    expect(await prisma.friendship.count({
+      where: {
+        OR: [
+          { requesterId: a.id, addresseeId: b.id },
+          { requesterId: b.id, addresseeId: a.id },
+        ],
+      },
+    })).toBe(0);
     expect((await requestFriend(a.id, b.username, NOW)).kind).toBe("requested");
   });
 
@@ -179,5 +242,74 @@ describe("blockUser and unblockUser", () => {
 
   it("refuses blocking myself", async () => {
     await expect(blockUser(a.id, a.id, NOW)).rejects.toMatchObject({ code: "self" });
+  });
+});
+
+describe("product events", () => {
+  it("keeps the successful friendship history after the relationship row is deleted", async () => {
+    const requestId = await sendRequest(a.id, b.username);
+    await acceptRequest(b.id, requestId, new Date(NOW.getTime() + 1));
+    await removeFriend(a.id, b.id, new Date(NOW.getTime() + 2));
+
+    expect(await prisma.friendship.findFirst({ where: { id: requestId } })).toBeNull();
+    const events = await prisma.productEvent.findMany({
+      where: { entityId: requestId },
+      orderBy: { occurredAt: "asc" },
+      select: { type: true, userId: true, otherUserId: true },
+    });
+    expect(events).toEqual([
+      { type: "friend_requested", userId: a.id, otherUserId: b.id },
+      { type: "friend_accepted", userId: b.id, otherUserId: a.id },
+      { type: "friend_removed", userId: a.id, otherUserId: b.id },
+    ]);
+  });
+
+  it("records decline, cancel, block, and unblock with the other member", async () => {
+    let requestId = await sendRequest(a.id, b.username);
+    const declineId = requestId;
+    await declineRequest(b.id, requestId, new Date(NOW.getTime() + 1));
+    requestId = await sendRequest(a.id, b.username);
+    const cancelId = requestId;
+    await cancelRequest(a.id, requestId, new Date(NOW.getTime() + 2));
+    await blockUser(a.id, b.id, new Date(NOW.getTime() + 3));
+    const blocked = await prisma.friendship.findFirstOrThrow({ where: { blockedById: a.id } });
+    await unblockUser(a.id, blocked.id, new Date(NOW.getTime() + 4));
+
+    const events = await prisma.productEvent.findMany({
+      where: {
+        entityId: { in: [declineId, cancelId, blocked.id] },
+        type: { in: ["friend_declined", "friend_cancelled", "friend_blocked", "friend_unblocked"] },
+      },
+      orderBy: { occurredAt: "asc" },
+      select: { type: true, userId: true, otherUserId: true },
+    });
+    expect(events).toEqual([
+      { type: "friend_declined", userId: b.id, otherUserId: a.id },
+      { type: "friend_cancelled", userId: a.id, otherUserId: b.id },
+      { type: "friend_blocked", userId: a.id, otherUserId: b.id },
+      { type: "friend_unblocked", userId: a.id, otherUserId: b.id },
+    ]);
+  });
+});
+
+describe("suspended members", () => {
+  it("cannot be targeted by requests or blocks", async () => {
+    await prisma.user.update({ where: { id: b.id }, data: { suspendedAt: NOW } });
+    try {
+      await expect(requestFriend(a.id, b.username, NOW)).rejects.toMatchObject({ code: "not_found" });
+      await expect(blockUser(a.id, b.id, NOW)).rejects.toMatchObject({ code: "not_found" });
+    } finally {
+      await prisma.user.update({ where: { id: b.id }, data: { suspendedAt: null } });
+    }
+  });
+
+  it("cannot accept a request from a member suspended after requesting", async () => {
+    const requestId = await sendRequest(a.id, b.username);
+    await prisma.user.update({ where: { id: a.id }, data: { suspendedAt: NOW } });
+    try {
+      await expect(acceptRequest(b.id, requestId, NOW)).rejects.toMatchObject({ code: "no_request" });
+    } finally {
+      await prisma.user.update({ where: { id: a.id }, data: { suspendedAt: null } });
+    }
   });
 });
