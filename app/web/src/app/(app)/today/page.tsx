@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { MarkerButton } from "@/components/marker-button";
 import { Note, ScreenTitle } from "@/components/paper";
 import { TitleBadge } from "@/components/title-badge";
-import { settleTodayAction } from "@/features/titles/actions";
 import { TITLE_BY_ID } from "@/features/titles/catalog";
 import { TodayResultCard } from "@/features/titles/components/today-result-card";
 import { getTodaySummary } from "@/features/titles/server/today-summary";
@@ -53,12 +51,7 @@ export default async function TodayPage() {
           </div>
         </>
       ) : (
-        <form action={settleTodayAction} className="mt-auto pt-6">
-          <Note className="mb-3">정산하면 오늘은 더 누를 수 없어요. 퇴근 직전에 눌러요.</Note>
-          <MarkerButton type="submit" className="w-full">
-            오늘 정산
-          </MarkerButton>
-        </form>
+        <Note className="mt-auto pt-6">자정에 자동으로 정산돼요.</Note>
       )}
     </div>
   );
