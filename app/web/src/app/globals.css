@@ -126,3 +126,17 @@ body {
     animation: none !important;
   }
 }
+
+/*
+ * 스크롤바 숨김. 줄노트 종이 위에 브라우저 크롬이 얹히면 손그림 톤이 깨지고,
+ * 모바일 웹뷰는 원래 오버레이 스크롤바라 데스크톱만 튀어 보인다.
+ * 스크롤 자체는 그대로 동작하고 키보드·휠·트랙패드에도 영향이 없다.
+ */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* 구형 Edge */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
