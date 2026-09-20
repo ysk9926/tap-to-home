@@ -34,8 +34,9 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 | `NEXT_PUBLIC_APP_URL` | `https://<production-domain>` | 비움 가능 |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase 값 | 동일 |
 | `SUPABASE_SECRET_KEY` | Supabase 값 | 동일 |
+| `CRON_SECRET` | 자정 정산 크론(`/api/cron/settle`) 인증. Vercel 프로젝트 설정에 넣으면 Cron 요청에 자동으로 실린다. 값이 없으면 엔드포인트가 500 을 돌려주고 정산이 돌지 않는다 (ADR 0008) | 필요 시 별도 값 |
 
-`vercel.json` 은 리전만 고정한다(`icn1`). 나머지는 대시보드 설정.
+`vercel.json` 은 리전(`icn1`)을 고정하고 자정 정산 크론(`/api/cron/settle`, `5 15 * * *`)을 등록한다. 나머지는 대시보드 설정.
 
 Prisma 클라이언트는 `src/generated/prisma` 에 생성되고 커밋하지 않는다. Vercel 은 빌드 캐시로 `node_modules` 를 복원하면 설치를 건너뛰어 `postinstall` 이 돌지 않으므로, 생성은 `build` 스크립트 앞단(`prisma generate && next build`)에서 한다. `postinstall` 은 로컬 설치 편의를 위해 남겨둔다.
 
@@ -44,7 +45,8 @@ Prisma 클라이언트는 `src/generated/prisma` 에 생성되고 커밋하지 �
 1. `https://<domain>/api/auth/ok` 가 200 → better-auth 기동.
 2. 회원가입(아이디) → `user` 에 `username` 행.
 3. 두 브라우저에서 레이스 화면을 열고 탭 → 상대 화면 갱신 (Realtime 연결은 `docs/decisions/0002-realtime.md`).
-4. 친구 등록 → 두 브라우저 탭 → 토스트 → 오늘 정산 → 도감.
+4. 친구 등록 → 두 브라우저 탭 → 토스트 → 레이스 화면의 "기록 보기" 로 `/records` 진입 → `/my/collection` 도감 확인.
+5. Vercel 대시보드의 Cron Jobs 탭에 `/api/cron/settle` 이 `5 15 * * *` 로 등록됐는지 본다. `CRON_SECRET` 이 프로젝트 환경 변수에 없으면 엔드포인트가 500 을 돌려주고 정산이 돌지 않으므로, 값이 들어갔는지 함께 확인한다.
 
 ## Flutter 배포 빌드
 
