@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { BackLink } from "@/components/back-link";
@@ -18,11 +19,26 @@ import { RaceSceneSheet } from "./race-scene-sheet";
 import { ExampleScreens } from "./screens";
 
 /**
- * 디자인 시스템 레퍼런스. 개발 환경에서만 열린다.
- * 기준 문서는 docs/design.md. 여기 보이는 것이 곧 컴포넌트의 실제 출력이다.
+ * 디자인 시스템 레퍼런스. 기준 문서는 docs/design.md.
+ * 여기 보이는 것이 곧 컴포넌트의 실제 출력이다.
+ *
+ * 개발 환경에서는 그냥 열리고, 프로덕션에서는 DEV_UI_KEY 와 같은 ?key= 를 들고 와야 열린다 (ADR 0004).
+ * 키를 비우면 프로덕션에서 닫힌다. 재배포 없이 닫으려면 Vercel 에서 값만 지운다.
  */
-export default function DevUiPage() {
-  if (process.env.NODE_ENV === "production") notFound();
+function devUiAllowed(key: string | string[] | undefined): boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  const expected = process.env.DEV_UI_KEY;
+  if (!expected || typeof key !== "string") return false;
+  // 길이가 다르면 timingSafeEqual 이 던지므로 먼저 거른다.
+  const given = Buffer.from(key);
+  const want = Buffer.from(expected);
+  return given.length === want.length && timingSafeEqual(given, want);
+}
+
+export default async function DevUiPage({ searchParams }: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  if (!devUiAllowed((await searchParams).key)) notFound();
 
   return (
     <Paper marginLeft={40} className="min-h-full flex-1">

@@ -7,7 +7,7 @@ import { TapButton } from "@/components/tap-button";
 import { FriendRailsSwitch } from "@/features/auth/components/friend-rails-switch";
 import { StageStrip } from "@/features/race/components/stage-strip";
 import { RaceLane } from "@/features/race/components/race-lane";
-import { HOME_THRESHOLD, STAGES, stageOf } from "@/features/race/stages";
+import { HOME_THRESHOLD, STAGES, stageIndexOf, stageOf } from "@/features/race/stages";
 
 export function FriendRailsSwitchDemo() {
   return (
@@ -33,12 +33,27 @@ function FriendRailsSwitchExample({ initial, fail = false }: { initial: boolean;
   );
 }
 
-/** 탭 카운트와 걷기 프레임을 한 곳에서 관리하는 훅. 데모용 */
+/**
+ * 탭 카운트와 걷기 프레임을 한 곳에서 관리하는 훅. 데모용.
+ *
+ * 실제 게임은 한 구간이 750~1350 탭이라 한 번 눌러서는 레일이 0.02% 밖에 안 움직인다.
+ * 레퍼런스 페이지에서는 눌렀을 때 달려 나가는 모습이 보여야 하므로, 현재 구간 길이의
+ * 1/12 씩 전진시켜 열두 번쯤 누르면 다음 랜드마크에 닿게 한다. stages.ts 의 임계값은
+ * 그대로 두고 입력만 배속한다.
+ */
+const DEMO_TAPS_PER_STAGE = 12;
+
 function useTapCounter(initial: number) {
   const [count, setCount] = useState(initial);
   const [frame, setFrame] = useState<0 | 1>(0);
   const tap = () => {
-    setCount((c) => Math.min(c + 1, HOME_THRESHOLD));
+    setCount((c) => {
+      const index = stageIndexOf(c);
+      const here = STAGES[index].threshold;
+      const next = STAGES[Math.min(index + 1, STAGES.length - 1)].threshold;
+      const stride = Math.max(1, Math.round((next - here) / DEMO_TAPS_PER_STAGE));
+      return Math.min(c + stride, HOME_THRESHOLD);
+    });
     setFrame((f) => (f === 0 ? 1 : 0));
   };
   return { count, frame, tap, setCount, reset: () => setCount(initial) };
@@ -53,7 +68,7 @@ export function TapDemo() {
       <div className="flex flex-col items-center gap-2">
         <TapButton onTap={tap} disabled={done} completed={count >= HOME_THRESHOLD} />
         <p className="font-note text-lg text-pencil-soft">
-          {count >= HOME_THRESHOLD ? "오늘은 침대에서 푹 쉬어요" : done ? "정산 후 · 점선" : "꾹꾹 누르면 한 칸씩 간다"}
+          {count >= HOME_THRESHOLD ? "오늘은 침대에서 푹 쉬어요" : done ? "정산 후 · 점선" : `누르면 달려 나간다 · 구간당 ${DEMO_TAPS_PER_STAGE}번`}
         </p>
       </div>
       <div className="min-w-[300px] flex-1">
@@ -154,7 +169,7 @@ export function RaceDemo() {
       </div>
       <div className="flex flex-col items-center gap-2">
         <TapButton onTap={tap} size={160} completed={count >= HOME_THRESHOLD} />
-        <span className="font-note text-lg text-pencil-soft">내 레인만 움직인다</span>
+        <span className="font-note text-lg text-pencil-soft">내 레인만 움직인다 · 누르면 출발</span>
       </div>
     </div>
   );

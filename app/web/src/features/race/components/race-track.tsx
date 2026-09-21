@@ -24,7 +24,13 @@ export function RaceTrack({ count, frame = 0, compact = false, name, bubble, ina
   const size = compact ? 24 : 36;
   const railBottom = compact ? 6 : 21;
   const personSize = size * 60 / 72;
-  const position = trackPositionOf(running ? count : current.threshold, size);
+  /*
+   * 출발할 때만 레일 위를 달린다. 시작점은 지금 서 있던 랜드마크 안이라
+   * 문이 열리는 자리에서 그대로 뛰쳐나오는 것으로 읽힌다. 도착점은 다음 랜드마크가
+   * 아니라 현재 누적 위치이고, 800ms 뒤 useRaceMotion 이 꺼지면 다시 랜드마크 대기로 돌아간다.
+   */
+  const origin = trackPositionOf(current.threshold, size);
+  const position = running ? trackPositionOf(count, size) : origin;
 
   return <div role="group" aria-label="퇴근 경로" className={cn("relative min-w-0 shrink-0", compact ? "h-16" : "h-24", className)}>
     <div
@@ -61,7 +67,7 @@ export function RaceTrack({ count, frame = 0, compact = false, name, bubble, ina
     <div
       role={running ? "img" : undefined} aria-label={running ? SCENE_CAPTIONS[current.key][1] : undefined}
       aria-hidden={!running}
-      className="pointer-events-none absolute -translate-x-1/2 transition-[left] duration-200 ease-[steps(3)]"
+      className="pointer-events-none absolute -translate-x-1/2 transition-[left] duration-700 ease-[steps(6)]"
       style={{ left: position, bottom: railBottom - personSize * 6 / 60, width: personSize * 40 / 60, height: personSize }}
     >
       {running && <>

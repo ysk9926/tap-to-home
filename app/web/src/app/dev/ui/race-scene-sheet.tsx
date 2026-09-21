@@ -60,6 +60,12 @@ function RaceScenePreview({ stage, nextThreshold, repeating, departing }: {
   const running = !home && (repeating ? departing : playing);
   // Move visibly within this stage, without crossing into the next preview.
   const count = stage.threshold + (running ? Math.floor((nextThreshold - stage.threshold) / 3) : 0);
+  /*
+   * 아래 두 줄은 실제 RaceTrack 이다. RaceTrack 은 count 가 늘어날 때 useRaceMotion 이
+   * 출발을 잡으므로, 확대 장면이 대기로 돌아가면 count 도 같이 임계값으로 되돌려
+   * 다음 재생에서 다시 증가로 읽히게 한다. docs/design.md 의 "확대 장면과 실제 레일은
+   * 같은 상태로 움직인다" 를 지키는 부분.
+   */
 
   useEffect(() => {
     if (!playing) return;

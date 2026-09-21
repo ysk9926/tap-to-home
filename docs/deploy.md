@@ -35,6 +35,7 @@ Supabase Auth 와 RLS 는 사용하지 않는다. 인증은 better-auth, DB 접�
 | `NEXT_PUBLIC_APP_URL` | `https://<production-domain>` | 비움 가능 |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase 값 | 동일 |
 | `SUPABASE_SECRET_KEY` | Supabase 값 | 동일 |
+| `DEV_UI_KEY` | `/dev/ui` 레퍼런스 페이지 열쇠 (ADR 0004). 값을 넣으면 `?key=<값>` 으로 열리고, 지우면 닫힌다 — 닫을 때 재배포는 필요 없다. `openssl rand -hex 16` | Preview 도 production 빌드라 가드가 걸린다. 미리보기에서 열어야 하면 Production 과 다른 값을 넣는다 |
 | `CRON_SECRET` | 자정 정산 크론(`/api/cron/settle`) 인증. Vercel 프로젝트 설정에 넣으면 Cron 요청에 자동으로 실린다. 값이 없으면 엔드포인트가 500 을 돌려주고 정산이 돌지 않는다 (ADR 0008) | 필요 시 별도 값 |
 
 실제 배포 설정은 `app/web/vercel.json`이며 리전(`icn1`)과 자정 정산 크론(`/api/cron/settle`, `5 15 * * *`)을 등록한다. 루트 `vercel.json`도 같은 값을 유지한다. 루트 파일에만 Cron을 추가하면 Root Directory가 `app/web`인 Git 배포에서 누락될 수 있다. 나머지는 대시보드 설정.

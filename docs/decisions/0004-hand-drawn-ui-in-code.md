@@ -10,7 +10,9 @@
 - 졸라맨은 40×60 viewBox 의 SVG path 두 프레임. `Stickman` 컴포넌트 하나가 7개 포즈를 갖는다.
 - 매직 선의 손그림 느낌은 SVG `feTurbulence` + `feDisplacementMap` 필터(`#wobble`) 한 개로 낸다. 프레임은 테두리를 `::before` 에 그려 필터가 글자를 건드리지 않게 한다.
 - 폰트는 `next/font/google` 로 Gaegu 와 Nanum Pen Script 를 셀프호스팅한다.
-- 레퍼런스 페이지는 `/dev/ui`. `NODE_ENV=production` 이면 `notFound()`.
+- 레퍼런스 페이지는 `/dev/ui`. 개발 환경에서는 그냥 열린다. 프로덕션에서는 `DEV_UI_KEY` 와 일치하는 `?key=` 를 들고 와야 열리고, 그 외에는 `notFound()`.
+
+2026-09-21 개정: 원래는 `NODE_ENV=production` 이면 무조건 `notFound()` 였다. 심사·리뷰 중 배포된 주소에서 레퍼런스를 봐야 할 일이 생겨 비밀 키 방식으로 바꿨다. `DEV_UI_KEY` 가 비어 있으면 프로덕션에서는 닫힌 상태가 되므로, 닫을 때는 Vercel 에서 값만 지우면 되고 재배포는 필요 없다. 키는 URL 에 남으므로 공개 링크로 다루지 않는다.
 
 ## 이유
 
