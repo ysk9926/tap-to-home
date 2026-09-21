@@ -11,6 +11,7 @@ import { useRaceSession } from "../hooks/use-race-session";
 import { useTap } from "../hooks/use-tap";
 import type { RaceToday } from "../race-state";
 import { HOME_THRESHOLD, stageOf } from "../stages";
+import { RaceLane } from "./race-lane";
 import { StageStrip } from "./stage-strip";
 
 export function RaceScreen({ initial }: { initial: RaceToday }) {
@@ -42,6 +43,7 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
   const completed = me.tapCount >= HOME_THRESHOLD;
   const myRank = data.racers.findIndex((r) => r.isMe) + 1;
   const friendCount = data.racers.length - 1;
+  const topFriends = data.racers.filter((r) => !r.isMe).slice(0, 2);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -57,6 +59,23 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
 
       <StageStrip count={me.tapCount} frame={frame} name={me.name} className="mt-4" />
 
+      {topFriends.length > 0 && (
+        <section aria-label="친구 상위 랭킹" className="mt-3 border-t-[1.5px] border-dashed border-pencil-soft pt-2">
+          <div className="flex items-baseline justify-between gap-2 font-note text-lg text-pencil">
+            <h2>친구 선두 {topFriends.length}명</h2>
+            <span className="tabular">나는 {myRank}위</span>
+          </div>
+          {topFriends.map((r) => (
+            <RaceLane
+              key={r.userId}
+              rank={data.racers.findIndex((racer) => racer.userId === r.userId) + 1}
+              name={r.name}
+              count={r.tapCount}
+            />
+          ))}
+        </section>
+      )}
+
       <div className="mt-3 flex flex-col items-center">
         <TapButton onTap={tap} disabled={data.settled} completed={completed} />
         <p className="mt-2 font-note text-[19px] text-pencil-soft">
@@ -70,7 +89,7 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
         </Link>
       </div>
 
-      {/* 랭킹은 별도 탭이다 (F1-2) — 여기서는 한 줄로만 넘겨준다 */}
+      {/* 전체 랭킹과 친구 등록은 기존 탭에서 이어간다 (F1-2). */}
       <Link
         href={friendCount > 0 ? "/ranking" : "/friends"}
         className="mt-6 flex items-center justify-between gap-2 border-t-[1.5px] border-dashed border-pencil-soft pt-3"
