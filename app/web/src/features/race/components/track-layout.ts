@@ -1,7 +1,7 @@
 import { STAGES, stageIndexOf } from "../stages";
 
 // Positions inside RaceScene's 108×72 viewBox: seat, doorway, crossing and bed.
-const OCCUPANT_CENTERS = [28, 37, 37, 62, 37, 54];
+const OCCUPANT_CENTERS = [28, 37, 37, 28, 37, 54];
 
 /** Fixed scenery occupies equally spaced slots, leaving room at both ends. */
 export function landmarkPositionOf(index: number, size: number): string {

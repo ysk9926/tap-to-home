@@ -24,7 +24,7 @@ export function RaceScene({ count, running = false, occupied = true, frame = 0, 
   const stage = stageOf(count).key;
   const moving = running && stage !== "home";
   const doorway = stage === "elevator" || stage === "lobby" || stage === "subway";
-  const x = moving ? 67 : stage === "seat" ? 8 : stage === "crosswalk" ? 42 : 17;
+  const x = moving ? 67 : stage === "seat" || stage === "crosswalk" ? 8 : 17;
   return (
     <svg
       width={size * 1.5} height={size} viewBox="0 0 108 72"
@@ -57,11 +57,11 @@ export function RaceScene({ count, running = false, occupied = true, frame = 0, 
         <path d="M18 67 V12 H56 V67" fill="var(--paper-2)" />
       </>}
       {stage === "crosswalk" && <>
-        <path d="M17 67 V32 M8 4 H26 V32 H8 Z" fill="var(--paper)" />
-        <circle cx="17" cy="12" r="4" fill={moving ? "none" : "currentColor"} />
-        <circle cx="17" cy="24" r="4" fill={moving ? "currentColor" : "none"} />
-        <text x="32" y="12" stroke="none" fill="currentColor" className="font-note" fontSize="13">{moving ? "건너기" : "대기"}</text>
-        <path d="M32 67 l4 -7 h6 l-4 7 Z M44 67 l4 -7 h6 l-4 7 Z M56 67 l4 -7 h6 l-4 7 Z" opacity=".5" />
+        <path d="M48 67 V32 M39 4 H57 V32 H39 Z" fill="var(--paper)" />
+        <circle cx="48" cy="12" r="4" fill={moving ? "none" : "currentColor"} />
+        <circle cx="48" cy="24" r="4" fill={moving ? "currentColor" : "none"} />
+        <text x="64" y="12" stroke="none" fill="currentColor" className="font-note" fontSize="13">{moving ? "건너기" : "대기"}</text>
+        <path d="M64 67 l4 -7 h6 l-4 7 Z M76 67 l4 -7 h6 l-4 7 Z M88 67 l4 -7 h6 l-4 7 Z" opacity=".5" />
       </>}
       {stage === "home" && <path d="M2 28 L54 3 L106 28 M9 26 V67 H101 V26" />}
       {doorway && <g strokeOpacity={moving ? 1 : .45}>
