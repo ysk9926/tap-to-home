@@ -89,3 +89,12 @@
 ## 에셋
 
 Midjourney 생성 에셋은 쓰지 않는다. 졸라맨·아이콘·프레임 모두 코드(SVG path·CSS)로 그린다. 예외가 생기면 `app/web/public/assets/` 에 SVG 로 두고 이 문서에 적는다.
+
+### 서비스 파비콘
+
+2026-09-21 사용자 요청으로 서비스 식별용 파비콘에는 생성한 래스터 이미지를 사용한다. 종이색 바탕·검은 매직 선·노란 형광펜색으로 집 안으로 달리는 졸라맨을 표현한다. 게임 화면의 SVG 컴포넌트에는 영향을 주지 않는다.
+
+- `app/web/src/app/favicon.ico`: 16·32·48·64·128·256px를 포함하는 브라우저 파비콘.
+- `app/web/src/app/icon.png`: 512px 서비스 아이콘.
+- `app/web/src/app/apple-icon.png`: 180px iOS 홈 화면 아이콘.
+- Next.js App Router의 파일 기반 메타데이터로 연결하며, 생성 원본과 프롬프트는 `docs/design/`에 보관한다.

@@ -1,0 +1,10 @@
+# Native builds and project documents are not part of the web deployment.
+/app/mobile/
+/docs/
+/output/
+/.playwright-cli/
+
+# Configure deployment secrets through Vercel environment variables.
+**/.env
+**/.env.*
+!**/.env.example
