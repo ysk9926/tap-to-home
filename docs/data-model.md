@@ -13,6 +13,7 @@ auth 테이블(`user`, `session`, `account`, `verification`)은 better-auth 계�
 | deletedAt | timestamptz null | 소프트 삭제. 채워지면 로그인·검색·랭킹·친구 목록에서 제외한다. row 와 friendship 은 남긴다 |
 | notifySignal | boolean not null default true | 퇴근 신호 푸시 수신 여부 (F2) |
 | notifySettlement | boolean not null default true | 정산 결과 푸시 수신 여부 (F3) |
+| showTopFriendRails | boolean not null default true | 메인 친구 TOP2 레일 표시 여부. `/my`에서 계정별 저장 (F1-2, F4) |
 | suspendedAt | timestamptz null | 관리자 이용 정지. 탈퇴와 별도이며 일반 인증·친구·레이스·신호·푸시·정산에서 제외 |
 | suspensionReason | text null | 관리자 정지 사유 |
 | analyticsExcluded | boolean not null default false | 운영·테스트용 일반 계정을 제품 통계에서 제외 |

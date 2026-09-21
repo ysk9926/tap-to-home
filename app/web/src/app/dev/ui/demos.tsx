@@ -4,9 +4,34 @@ import { useEffect, useState } from "react";
 import { MarkerButton } from "@/components/marker-button";
 import { Stickman, STICKMAN_POSES, type StickmanPose } from "@/components/stickman";
 import { TapButton } from "@/components/tap-button";
+import { FriendRailsSwitch } from "@/features/auth/components/friend-rails-switch";
 import { StageStrip } from "@/features/race/components/stage-strip";
 import { RaceLane } from "@/features/race/components/race-lane";
 import { HOME_THRESHOLD, STAGES, stageOf } from "@/features/race/stages";
+
+export function FriendRailsSwitchDemo() {
+  return (
+    <div className="grid max-w-[720px] gap-6 sm:grid-cols-2">
+      <FriendRailsSwitchExample initial />
+      <FriendRailsSwitchExample initial={false} />
+      <FriendRailsSwitchExample initial fail />
+    </div>
+  );
+}
+
+function FriendRailsSwitchExample({ initial, fail = false }: { initial: boolean; fail?: boolean }) {
+  const [saved, setSaved] = useState(initial);
+  return (
+    <div>
+      <p className="font-note text-lg text-pencil">{fail ? "저장 실패 · 눌러서 복원 확인" : "눌러서 저장 중 상태 확인"}</p>
+      <FriendRailsSwitch showTopFriendRails={saved} saveAction={async (data) => {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (fail) throw new Error("Preview save failure");
+        setSaved(data.get("showTopFriendRails") === "on");
+      }} />
+    </div>
+  );
+}
 
 /** 탭 카운트와 걷기 프레임을 한 곳에서 관리하는 훅. 데모용 */
 function useTapCounter(initial: number) {

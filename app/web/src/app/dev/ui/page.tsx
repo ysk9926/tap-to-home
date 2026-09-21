@@ -13,7 +13,7 @@ import { TextField } from "@/components/text-field";
 import { TitleBadge } from "@/components/title-badge";
 import { StageLandmark } from "@/features/race/components/stage-landmark";
 import { STAGES } from "@/features/race/stages";
-import { RaceDemo, StickmanSheet, TapDemo } from "./demos";
+import { FriendRailsSwitchDemo, RaceDemo, StickmanSheet, TapDemo } from "./demos";
 import { RaceSceneSheet } from "./race-scene-sheet";
 import { ExampleScreens } from "./screens";
 
@@ -153,6 +153,10 @@ export default function DevUiPage() {
             </div>
           </Section>
 
+          <Section id="preferences" title="화면 표시 설정" lead="친구 TOP2 레일의 켜짐·꺼짐·저장 중·실패 복원을 확인한다. 미리보기는 계정에 저장하지 않는다.">
+            <FriendRailsSwitchDemo />
+          </Section>
+
           <Section id="nav" title="길찾기" lead="하단 탭의 활성 탭은 매직 밑줄. 세부 화면은 제목 위에 BackLink 를 두고, 돌아갈 화면 이름을 라벨로 쓴다.">
             <div className="flex flex-wrap items-start gap-10">
               <div className="relative h-16 w-[360px] [&_nav]:absolute">
@@ -263,6 +267,7 @@ const SECTIONS: Array<[string, string]> = [
   ["frames", "종이와 프레임"],
   ["buttons", "버튼"],
   ["inputs", "입력칸"],
+  ["preferences", "화면 표시 설정"],
   ["nav", "길찾기"],
   ["stickman", "졸라맨"],
   ["landmarks", "구간 랜드마크"],

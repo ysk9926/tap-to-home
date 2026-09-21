@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Note, ScreenTitle } from "@/components/paper";
 import { LogoutRow } from "@/features/auth/components/logout-row";
+import { FriendRailsSwitch } from "@/features/auth/components/friend-rails-switch";
+import { getProfile } from "@/features/auth/server/profile";
 import { getCollection } from "@/features/titles/server/collection";
 import { requirePageUser } from "@/lib/auth/current-user";
 
@@ -19,7 +21,7 @@ function MenuRow({ href, label, right }: { href: string; label: string; right?: 
 
 export default async function MyPage() {
   const user = await requirePageUser();
-  const collection = await getCollection(user.id);
+  const [collection, profile] = await Promise.all([getCollection(user.id), getProfile(user.id)]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -33,6 +35,7 @@ export default async function MyPage() {
           label="퇴근 도감"
           right={`${collection.earned} / ${collection.total}`}
         />
+        <FriendRailsSwitch key={user.id} showTopFriendRails={profile.showTopFriendRails} />
         <MenuRow href="/my/terms" label="이용약관" />
         <MenuRow href="/my/privacy" label="개인정보 처리방침" />
         <LogoutRow />

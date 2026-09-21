@@ -14,7 +14,10 @@ import { HOME_THRESHOLD, stageOf } from "../stages";
 import { RaceLane } from "./race-lane";
 import { StageStrip } from "./stage-strip";
 
-export function RaceScreen({ initial }: { initial: RaceToday }) {
+export function RaceScreen({ initial, showTopFriendRails }: {
+  initial: RaceToday;
+  showTopFriendRails: boolean;
+}) {
   const { data } = useRaceSession(initial);
 
   // 연타 감지: 탭마다 창을 다시 열고, 창이 닫히면 최고 등급 하나만 보낸다 (F2)
@@ -59,7 +62,7 @@ export function RaceScreen({ initial }: { initial: RaceToday }) {
 
       <StageStrip count={me.tapCount} frame={frame} name={me.name} className="mt-4" />
 
-      {topFriends.length > 0 && (
+      {showTopFriendRails && topFriends.length > 0 && (
         <section aria-label="친구 상위 랭킹" className="mt-3 border-t-[1.5px] border-dashed border-pencil-soft pt-2">
           <div className="flex items-baseline justify-between gap-2 font-note text-lg text-pencil">
             <h2>친구 선두 {topFriends.length}명</h2>

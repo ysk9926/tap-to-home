@@ -87,6 +87,16 @@ CLI 배포는 워크스페이스 루트에서 `npx vercel deploy --prod --projec
 
 ## 배포 후 확인
 
+### 친구 TOP2 레일 표시 설정 배포 (2026-09-21)
+
+`20260921072526_add_top_friend_rails_preference`를 운영 Supabase에 `pnpm db:deploy`로 적용하고, 7개 마이그레이션이 모두 적용된 상태를 확인했다. 기존·신규 사용자의 `showTopFriendRails` 기본값은 `true`다.
+
+Vercel 배포 `dpl_8sqwmGvnPUHCuo4VmohWRqMTramg`가 Production `READY`이며 `https://taptohome.site`와 기존 Vercel 도메인이 이 배포를 가리킨다. 빌드가 통과했고, 기존 주소의 경로·쿼리 보존 리다이렉트와 두 도메인의 정산 API 인증 검사(인증 없는 요청 401)를 확인했다.
+
+운영 Chromium에서 임시 계정으로 가입·세션 조회, TOP2 기본 표시, 마이페이지에서 끄기, 메인 이동·새로고침 후 숨김 유지, 전체 랭킹 표시 유지, 로그아웃·재로그인 후 설정 유지, 다시 켜기와 두 레일 복원을 확인했다. DB에서도 본인 설정 저장과 다른 두 계정의 기본값 유지를 확인했다. 검증에 만든 계정 3개와 연결된 데이터는 정리했다. 정산·푸시를 수동 실행하지 않았다.
+
+### 공통 확인 항목
+
 1. `https://<domain>/api/auth/ok` 가 200 → better-auth 기동. 이 응답과 비로그인 `/login`·`/signup`의 200만으로는 DB·세션 조회를 검증할 수 없다. 로그인 세션으로 `/`를 새로고침해 레이스가 표시되는지, `/api/auth/get-session`이 200과 사용자·세션을 반환하는지도 확인한다.
 2. 회원가입(아이디) → `user` 에 `username` 행.
 3. 두 브라우저에서 레이스 화면을 열고 탭 → 상대 화면 갱신 (Realtime 연결은 `docs/decisions/0002-realtime.md`).

@@ -42,6 +42,19 @@ export async function updateNotifyAction(formData: FormData): Promise<void> {
   revalidatePath("/my/profile");
 }
 
+/** 메인 친구 레일 표시. 로그인한 사용자 본인의 설정만 변경한다. */
+export async function updateRaceDisplayAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser(await headers());
+  if (!user) redirect("/login");
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { showTopFriendRails: formData.get("showTopFriendRails") === "on" },
+  });
+  revalidatePath("/");
+  revalidatePath("/my");
+}
+
 /**
  * 계정 탈퇴. 오조작을 막기 위해 자기 아이디를 정확히 입력해야 한다.
  * 성공하면 세션이 사라지므로 이후 요청은 /login 으로 튕긴다.

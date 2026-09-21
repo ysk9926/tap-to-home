@@ -33,6 +33,8 @@ model User {
   // 알림 수신 설정 (/my/profile). 인앱 토스트·진입 다이얼로그는 이 설정과 무관하다
   notifySignal     Boolean   @default(true)
   notifySettlement Boolean   @default(true)
+  // 메인 친구 TOP2 레일 표시 설정 (/my)
+  showTopFriendRails Boolean  @default(true)
   sessions        Session[]
   accounts        Account[]
 
