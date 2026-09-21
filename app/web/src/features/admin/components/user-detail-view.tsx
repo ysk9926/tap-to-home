@@ -137,7 +137,7 @@ export function UserDetailView({ adminId, userId }: { adminId: string; userId: s
         <PageHeader
           eyebrow={`사용자 ID · ${user.id}`}
           title={user.name}
-          description={`@${user.username}의 계정 상태, 최근 플레이와 관리 기록입니다.`}
+          description={`@${user.username}의 계정 상태, 친구·차단 목록과 활동 기록입니다.`}
           actions={<StatusBadge status={user.status} />}
         />
       </div>
@@ -150,7 +150,7 @@ export function UserDetailView({ adminId, userId }: { adminId: string; userId: s
           <dt>계정 상태</dt><dd><StatusBadge status={user.status} /> {user.suspensionReason && <span>· {user.suspensionReason}</span>}</dd>
           <dt>최근 방문</dt><dd>{formatDate(user.lastSeenAt, true)}</dd>
           <dt>최근 탭</dt><dd>{formatDate(user.lastTapAt, true)}</dd>
-          <dt>친구 / 최근 30일 탭</dt><dd>{user.friendCount.toLocaleString("ko-KR")}명 / {user.tapCount.toLocaleString("ko-KR")}회</dd>
+          <dt>정상 상태 친구 / 최근 30일 탭</dt><dd>{user.friendCount.toLocaleString("ko-KR")}명 / {user.tapCount.toLocaleString("ko-KR")}회</dd>
           <dt>제품 분석</dt><dd>{user.analyticsExcluded ? "집계에서 제외" : "집계에 포함"}</dd>
         </dl>
         {user.status !== "deleted" && (
@@ -166,6 +166,52 @@ export function UserDetailView({ adminId, userId }: { adminId: string; userId: s
         )}
       </section>
 
+      <section className={`${styles.panel} ${styles.panelInner}`} style={{ marginTop: 16 }}>
+        <div className={styles.sectionHeading}>
+          <h2>친구 목록</h2>
+          <p className={styles.data}>{result.data.friends.length.toLocaleString("ko-KR")}명 · 수락일 최신순 · 한국 시간</p>
+        </div>
+        <p className={styles.panelNote}>정지·탈퇴한 계정도 표시합니다. 친구가 된 시각이 남아 있지 않으면 ‘기록 없음’으로 표시해요.</p>
+        {result.data.friends.length === 0 ? <p className={styles.stateText}>현재 친구가 없어요.</p> : (
+          <div className={styles.tableWrap}>
+            <table className={`${styles.table} ${styles.data}`} aria-label="친구 목록">
+              <thead><tr><th scope="col">친구</th><th scope="col">아이디</th><th scope="col">계정 상태</th><th scope="col">친구가 된 시각</th></tr></thead>
+              <tbody>{result.data.friends.map((friend) => (
+                <tr key={friend.id}>
+                  <td><Link href={`/admin/users/${encodeURIComponent(friend.id)}`} className={styles.tableLink}>{friend.name}</Link></td>
+                  <td>@{friend.username || "—"}</td>
+                  <td><StatusBadge status={friend.status} /></td>
+                  <td className={styles.nowrap}>{friend.acceptedAt ? <time dateTime={friend.acceptedAt}>{formatDate(friend.acceptedAt, true)}</time> : "기록 없음"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className={`${styles.panel} ${styles.panelInner}`} style={{ marginTop: 16 }}>
+        <div className={styles.sectionHeading}>
+          <h2>차단한 사람</h2>
+          <p className={styles.data}>{result.data.blockedUsers.length.toLocaleString("ko-KR")}명 · 차단일 최신순 · 한국 시간</p>
+        </div>
+        <p className={styles.panelNote}>이 사용자가 현재 차단한 상대와 차단 시각입니다. 정지·탈퇴한 계정도 표시합니다.</p>
+        {result.data.blockedUsers.length === 0 ? <p className={styles.stateText}>이 사용자가 차단한 사람이 없어요.</p> : (
+          <div className={styles.tableWrap}>
+            <table className={`${styles.table} ${styles.data}`} aria-label="차단한 사람 목록">
+              <thead><tr><th scope="col">차단한 상대</th><th scope="col">아이디</th><th scope="col">계정 상태</th><th scope="col">차단 시각</th></tr></thead>
+              <tbody>{result.data.blockedUsers.map((blocked) => (
+                <tr key={blocked.id}>
+                  <td><Link href={`/admin/users/${encodeURIComponent(blocked.id)}`} className={styles.tableLink}>{blocked.name}</Link></td>
+                  <td>@{blocked.username || "—"}</td>
+                  <td><StatusBadge status={blocked.status} /></td>
+                  <td className={styles.nowrap}>{blocked.blockedAt ? <time dateTime={blocked.blockedAt}>{formatDate(blocked.blockedAt, true)}</time> : "기록 없음"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <div className={styles.equalColumns}>
         <section className={`${styles.panel} ${styles.panelInner}`}>
           <div className={styles.sectionHeading}><h2>최근 플레이</h2><p>최근 30일</p></div>
@@ -176,11 +222,8 @@ export function UserDetailView({ adminId, userId }: { adminId: string; userId: s
           )}
         </section>
         <section className={`${styles.panel} ${styles.panelInner}`}>
-          <div className={styles.sectionHeading}><h2>친구·칭호</h2><p>현재 관계와 누적 획득</p></div>
-          <h3 className={styles.panelTitle}>칭호</h3>
+          <div className={styles.sectionHeading}><h2>칭호</h2><p>누적 획득</p></div>
           {result.data.titles.length === 0 ? <p className={styles.stateText}>획득한 칭호가 없어요.</p> : <ul className={styles.data}>{result.data.titles.map((title) => <li key={title.id}>{title.name} · {title.earnedCount.toLocaleString("ko-KR")}회</li>)}</ul>}
-          <h3 className={styles.panelTitle} style={{ marginTop: 18 }}>친구</h3>
-          {result.data.friends.length === 0 ? <p className={styles.stateText}>현재 정상 상태의 친구가 없어요.</p> : <ul className={styles.data}>{result.data.friends.map((friend) => <li key={friend.id}>{friend.name} <span className={styles.muted}>@{friend.username}</span></li>)}</ul>}
         </section>
       </div>
 

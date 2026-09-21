@@ -3,7 +3,6 @@ import { sqltag as sql } from "@prisma/client/runtime/client";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { kstDate, runDateToYmd } from "@/lib/kst";
-import { ACTIVE_USER } from "@/lib/db/active-user";
 import { AdminError } from "@/lib/admin-auth/config";
 import { TITLES } from "@/features/titles/catalog";
 import type { AdminAction, AdminAuditList, AdminAuditRow, AdminUserDetail, AdminUserList, AdminUserRow } from "../types";
@@ -126,23 +125,43 @@ export async function listAdminAudit(params: URLSearchParams): Promise<AdminAudi
 export async function getAdminUserDetail(userId: string, now = new Date()): Promise<AdminUserDetail> {
   const rows = await prisma.$queryRaw<UserRow[]>(sql`SELECT * FROM (${userRows(now)}) f WHERE id = ${userId}`);
   if (!rows[0]) throw new AdminError(404, "사용자를 찾을 수 없습니다");
+  const relatedUserSelect = { id: true, username: true, name: true, deletedAt: true, suspendedAt: true } as const;
   const [runs, titles, connections, audit] = await Promise.all([
     prisma.dailyRun.findMany({ where: { userId, runDate: { gte: new Date(kstDate(now).getTime() - 29 * DAY), lte: kstDate(now) } },
       orderBy: { runDate: "desc" }, select: { runDate: true, tapCount: true, stage: true, result: { select: { dailyRunId: true } } } }),
     prisma.userTitle.findMany({ where: { userId }, select: { titleId: true, earnedCount: true } }),
-    prisma.friendship.findMany({ where: { status: "accepted", OR: [
-      { requesterId: userId, addressee: ACTIVE_USER }, { addresseeId: userId, requester: ACTIVE_USER },
-    ] }, select: { requester: { select: { id: true, username: true, name: true } }, addressee: { select: { id: true, username: true, name: true } } } }),
+    prisma.friendship.findMany({
+      where: {
+        AND: [
+          { OR: [{ requesterId: userId }, { addresseeId: userId }] },
+          { OR: [{ status: "accepted" }, { status: "blocked", blockedById: userId }] },
+        ],
+      },
+      orderBy: [{ respondedAt: { sort: "desc", nulls: "last" } }, { id: "asc" }],
+      select: {
+        status: true, respondedAt: true,
+        requester: { select: relatedUserSelect }, addressee: { select: relatedUserSelect },
+      },
+    }),
     listAdminAudit(new URLSearchParams({ targetUserId: userId, pageSize: "25" })),
   ]);
-  const friends = [...new Map(connections.map((f) => {
-    const other = f.requester.id === userId ? f.addressee : f.requester;
-    return [other.id, { ...other, username: other.username ?? "" }];
-  })).values()];
+  const friends = new Map<string, AdminUserDetail["friends"][number]>();
+  const blockedUsers = new Map<string, AdminUserDetail["blockedUsers"][number]>();
+  for (const connection of connections) {
+    const other = connection.requester.id === userId ? connection.addressee : connection.requester;
+    const status: AdminUserRow["status"] = other.deletedAt ? "deleted" : other.suspendedAt ? "suspended" : "active";
+    const user = { id: other.id, username: other.username ?? "", name: other.name, status };
+    const respondedAt = connection.respondedAt?.toISOString() ?? null;
+    if (connection.status === "accepted" && !friends.has(other.id)) {
+      friends.set(other.id, { ...user, acceptedAt: respondedAt });
+    } else if (connection.status === "blocked" && !blockedUsers.has(other.id)) {
+      blockedUsers.set(other.id, { ...user, blockedAt: respondedAt });
+    }
+  }
   return { user: publicUser(rows[0]),
     runs: runs.map((r) => ({ date: runDateToYmd(r.runDate), taps: r.tapCount, stage: r.stage, settled: r.result !== null })),
     titles: titles.map((t) => ({ id: t.titleId, name: TITLES.find((entry) => entry.id === t.titleId)?.name ?? t.titleId, earnedCount: t.earnedCount })),
-    friends, audit: audit.entries,
+    friends: [...friends.values()], blockedUsers: [...blockedUsers.values()], audit: audit.entries,
   };
 }
 

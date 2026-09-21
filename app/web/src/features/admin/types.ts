@@ -36,11 +36,13 @@ export type AdminAuditRow = {
   before: Record<string, unknown>; after: Record<string, unknown>;
 };
 export type AdminAuditList = { entries: AdminAuditRow[]; total: number; page: number; pageSize: number };
+export type AdminRelatedUser = Pick<AdminUserRow, "id" | "username" | "name" | "status">;
 export type AdminUserDetail = {
   user: AdminUserRow;
   runs: { date: string; taps: number; stage: number; settled: boolean }[];
   titles: { id: string; name: string; earnedCount: number }[];
-  friends: { id: string; username: string; name: string }[];
+  friends: (AdminRelatedUser & { acceptedAt: string | null })[];
+  blockedUsers: (AdminRelatedUser & { blockedAt: string | null })[];
   audit: AdminAuditRow[];
 };
 export type AdminAction = "suspend" | "unsuspend" | "revoke-sessions" | "analytics-exclusion";
