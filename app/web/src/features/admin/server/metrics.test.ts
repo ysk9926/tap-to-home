@@ -80,14 +80,14 @@ beforeAll(async () => {
     data: {
       userId: first.id,
       runDate: date("2031-05-12"),
-      tapCount: 10_000,
+      tapCount: 5_000,
       stage: 5,
       firstTapAt: instant("2031-05-12T00:00:20Z"),
       lastTapAt: instant("2031-05-12T05:00:00Z"),
       tapEvents: {
         create: [
-          { batchSize: 4_000, tappedAt: instant("2031-05-12T03:00:00Z") },
-          { batchSize: 6_000, tappedAt: instant("2031-05-12T05:00:00Z") },
+          { batchSize: 2_000, tappedAt: instant("2031-05-12T03:00:00Z") },
+          { batchSize: 3_000, tappedAt: instant("2031-05-12T05:00:00Z") },
         ],
       },
     },
@@ -96,11 +96,11 @@ beforeAll(async () => {
     data: {
       userId: second.id,
       runDate: date("2031-05-12"),
-      tapCount: 3_200,
+      tapCount: 1_600,
       stage: 2,
       firstTapAt: instant("2031-05-12T02:00:00Z"),
       lastTapAt: instant("2031-05-12T03:00:00Z"),
-      tapEvents: { create: { batchSize: 3_200, tappedAt: instant("2031-05-12T03:00:00Z") } },
+      tapEvents: { create: { batchSize: 1_600, tappedAt: instant("2031-05-12T03:00:00Z") } },
     },
   });
   await prisma.dailyRun.createMany({
@@ -108,7 +108,7 @@ beforeAll(async () => {
       {
         userId: excluded.id,
         runDate: date("2031-05-12"),
-        tapCount: 10_000,
+        tapCount: 5_000,
         stage: 5,
         firstTapAt: instant("2031-05-12T02:00:10Z"),
         lastTapAt: instant("2031-05-12T02:00:10Z"),
@@ -116,7 +116,7 @@ beforeAll(async () => {
       {
         userId: deleted.id,
         runDate: date("2031-05-13"),
-        tapCount: 1_500,
+        tapCount: 750,
         stage: 1,
         firstTapAt: instant("2031-05-13T03:00:00Z"),
         lastTapAt: instant("2031-05-13T03:00:00Z"),
@@ -269,14 +269,14 @@ describe("getDashboard", () => {
 
     expect(data.stages.map(({ threshold, count, total, rate }) => ({ threshold, count, total, rate }))).toEqual([
       { threshold: 1, count: 4, total: 4, rate: 100 },
-      { threshold: 1500, count: 3, total: 4, rate: 75 },
-      { threshold: 3200, count: 2, total: 4, rate: 50 },
+      { threshold: 750, count: 3, total: 4, rate: 75 },
+      { threshold: 1600, count: 2, total: 4, rate: 50 },
+      { threshold: 2500, count: 1, total: 4, rate: 25 },
+      { threshold: 3650, count: 1, total: 4, rate: 25 },
       { threshold: 5000, count: 1, total: 4, rate: 25 },
-      { threshold: 7300, count: 1, total: 4, rate: 25 },
-      { threshold: 10000, count: 1, total: 4, rate: 25 },
     ]);
-    expect(data.hourly.find(({ hour }) => hour === 12)).toEqual({ hour: 12, taps: 7_200, players: 2 });
-    expect(data.hourly.find(({ hour }) => hour === 14)).toEqual({ hour: 14, taps: 6_000, players: 1 });
+    expect(data.hourly.find(({ hour }) => hour === 12)).toEqual({ hour: 12, taps: 3_600, players: 2 });
+    expect(data.hourly.find(({ hour }) => hour === 14)).toEqual({ hour: 14, taps: 3_000, players: 1 });
     expect(data.titles.find(({ id }) => id === "heart_already_home")).toMatchObject({
       name: "마음만 이미 집에 있음",
       count: 1,

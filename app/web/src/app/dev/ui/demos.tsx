@@ -62,7 +62,7 @@ export function TapDemo() {
           {STAGES.slice(1).map((stage) => <MarkerButton key={stage.key} size="sm" variant="ghost" onClick={() => setCount(stage.threshold)}>
             {stage.short} 도착 보기
           </MarkerButton>)}
-          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(9999)}>마지막 1회 남기기</MarkerButton>
+          <MarkerButton size="sm" variant="ghost" onClick={() => setCount(HOME_THRESHOLD - 1)}>마지막 1회 남기기</MarkerButton>
           <MarkerButton size="sm" variant="ghost" onClick={() => setDone((d) => !d)}>
             {done ? "다시 활성화" : "정산 상태 보기"}
           </MarkerButton>

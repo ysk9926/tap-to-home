@@ -56,22 +56,22 @@ describe("recordTaps", () => {
 
   it("only records remaining taps when concurrent batches reach home", async () => {
     const day = new Date("2026-09-20T01:00:00Z");
-    await recordTaps(userId, 9997, day);
+    await recordTaps(userId, 4997, day);
     const results = await Promise.all([
       recordTaps(userId, 2, day),
       recordTaps(userId, 5, day),
     ]);
-    expect(results.every((result) => result.tapCount <= 10000)).toBe(true);
+    expect(results.every((result) => result.tapCount <= 5000)).toBe(true);
     const run = await prisma.dailyRun.findUniqueOrThrow({
       where: { userId_runDate: { userId, runDate: kstDate(day) } },
       include: { tapEvents: true },
     });
-    expect(run.tapCount).toBe(10000);
+    expect(run.tapCount).toBe(5000);
     expect(run.stage).toBe(5);
-    expect(run.tapEvents.reduce((sum, event) => sum + event.batchSize, 0)).toBe(10000);
+    expect(run.tapEvents.reduce((sum, event) => sum + event.batchSize, 0)).toBe(5000);
 
     expect(await recordTaps(userId, 50, new Date(day.getTime() + 60_000)))
-      .toEqual({ tapCount: 10000, stage: 5 });
+      .toEqual({ tapCount: 5000, stage: 5 });
     const after = await prisma.dailyRun.findUniqueOrThrow({
       where: { id: run.id }, include: { tapEvents: true },
     });
@@ -81,7 +81,7 @@ describe("recordTaps", () => {
 
   it("caps the first batch and permits taps again on a new day", async () => {
     const day = new Date("2026-09-21T01:00:00Z");
-    expect(await recordTaps(userId, 10001, day)).toEqual({ tapCount: 10000, stage: 5 });
+    expect(await recordTaps(userId, 5001, day)).toEqual({ tapCount: 5000, stage: 5 });
     expect(await recordTaps(userId, 1, new Date("2026-09-22T01:00:00Z")))
       .toEqual({ tapCount: 1, stage: 0 });
   });

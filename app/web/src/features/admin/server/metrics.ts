@@ -148,7 +148,7 @@ async function loadPeriodStats(range: DateRange, now: Date): Promise<PeriodStats
     prisma.$queryRaw<RunSummaryRow[]>`
       SELECT
         COUNT(*) FILTER (WHERE r."tapCount" > 0) AS "playerDays",
-        COUNT(*) FILTER (WHERE r."tapCount" >= 10000) AS "completedDays",
+        COUNT(*) FILTER (WHERE r."tapCount" >= 5000) AS "completedDays",
         percentile_cont(0.5) WITHIN GROUP (ORDER BY r."tapCount")
           FILTER (WHERE r."tapCount" > 0) AS "medianTaps"
       FROM "daily_run" r
@@ -588,7 +588,7 @@ export async function getDashboard(params: URLSearchParams, now: Date = new Date
     matureD7.length > 0
       ? ratioMetric("d7_retention", "D7 재방문", d7Numerator, d7Denominator, "가입 7일 뒤 KST 날짜의 방문입니다.", priorHasMatureD7 ? comparison(ratio(priorD7Numerator, priorD7Denominator)) : undefined)
       : collectingMetric("d7_retention", "D7 재방문", "%", "가입 7일 뒤 하루가 끝나야 계산됩니다. 최근 30일·90일도 확인해 주세요."),
-    ratioMetric("completion_rate", "플레이일 완주율", current.completedDays, current.playerDays, "탭이 있는 사용자·날짜 중 10,000회 이상인 비율입니다.", comparison(ratio(previous.completedDays, previous.playerDays))),
+    ratioMetric("completion_rate", "플레이일 완주율", current.completedDays, current.playerDays, "탭이 있는 사용자·날짜 중 5,000회 이상인 비율입니다.", comparison(ratio(previous.completedDays, previous.playerDays))),
     current.medianTaps === null
       ? { id: "median_taps", label: "플레이일 탭 중앙값", value: null, unit: "회", status: "empty", hint: "탭이 있는 사용자·날짜의 중앙값입니다.", ...(comparison(previous.medianTaps) !== undefined ? { previous: comparison(previous.medianTaps) } : {}) }
       : valueMetric("median_taps", "플레이일 탭 중앙값", current.medianTaps, "회", "탭이 있는 사용자·날짜의 중앙값입니다.", comparison(previous.medianTaps)),
@@ -612,7 +612,7 @@ export async function getDashboard(params: URLSearchParams, now: Date = new Date
     SELECT threshold, COUNT(*) AS count
     FROM "daily_run" r
     JOIN "user" u ON u.id = r."userId"
-    CROSS JOIN (VALUES (1500), (3200), (5000), (7300), (10000)) levels(threshold)
+    CROSS JOIN (VALUES (750), (1600), (2500), (3650), (5000)) levels(threshold)
     WHERE u."analyticsExcluded" = false
       AND r."runDate" >= ${fromDate} AND r."runDate" <= ${toDate}
       AND r."tapCount" >= levels.threshold

@@ -3,7 +3,7 @@ import { settlementMessage } from "./messages";
 
 describe("settlementMessage", () => {
   it("leads with the primary title when there is one", () => {
-    const msg = settlementMessage("heart_already_home", 10000);
+    const msg = settlementMessage("heart_already_home", 5000);
     expect(msg.body).toContain("마음만 이미 집에 있음");
   });
 

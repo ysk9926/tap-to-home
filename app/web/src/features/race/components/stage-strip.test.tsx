@@ -26,14 +26,14 @@ it.each(["main", "ranking"])("keeps the %s stride phase stable across repeated t
 });
 
 it("keeps the enlarged preview stride stable when its idle frame changes", () => {
-  const view = render(<RaceScene count={1500} running frame={0} />);
+  const view = render(<RaceScene count={750} running frame={0} />);
   const pose = () => view.container.querySelector(".race-run-first path:last-child")!.getAttribute("d");
   const firstStride = pose();
-  view.rerender(<RaceScene count={1500} running frame={1} />);
+  view.rerender(<RaceScene count={750} running frame={1} />);
   expect(pose()).toBe(firstStride);
 });
 
-it.each([0, 1500, 3200, 5000, 7300])("preserves character size when leaving the scene at %i", (count) => {
+it.each([0, 750, 1600, 2500, 3650])("preserves character size when leaving the scene at %i", (count) => {
   const view = render(<RaceScene count={count} />);
   const size = () => view.container.querySelector("svg svg")!.getAttribute("height");
   const waitingSize = size();
@@ -43,10 +43,10 @@ it.each([0, 1500, 3200, 5000, 7300])("preserves character size when leaving the 
 
 it.each([
   [0, "책상 앞에 앉아 있어요"],
-  [1500, "엘리베이터 안에서 기다려요"],
-  [3200, "로비 안에서 기다려요"],
-  [5000, "신호를 기다려요"],
-  [7300, "지하철을 타고 있어요"],
+  [750, "엘리베이터 안에서 기다려요"],
+  [1600, "로비 안에서 기다려요"],
+  [2500, "신호를 기다려요"],
+  [3650, "지하철을 타고 있어요"],
 ] as const)("returns to the stage's idle scene after tapping at %i", (count, idle) => {
   const view = render(<StageStrip count={count} />);
   expect(screen.getByRole("img", { name: idle })).toBeTruthy();
@@ -61,18 +61,18 @@ it.each([
 });
 
 it("lies in bed at home and never resumes running for completed counts", () => {
-  const view = render(<StageStrip count={9999} />);
-  view.rerender(<StageStrip count={10000} />);
+  const view = render(<StageStrip count={4999} />);
+  view.rerender(<StageStrip count={5000} />);
   expect(screen.getByRole("img", { name: "집에서 침대에 누워 쉬어요" })).toBeTruthy();
-  view.rerender(<StageStrip count={10001} />);
+  view.rerender(<StageStrip count={5001} />);
   expect(screen.queryByRole("img", { name: /달려/ })).toBeNull();
   view.rerender(<StageStrip count={0} />);
   expect(screen.getByRole("img", { name: "책상 앞에 앉아 있어요" })).toBeTruthy();
 });
 
 it("animates a friend's incoming count in the ranking then returns to idle", () => {
-  const view = render(<RaceLane rank={1} name="친구" count={7300} />);
-  view.rerender(<RaceLane rank={1} name="친구" count={7305} />);
+  const view = render(<RaceLane rank={1} name="친구" count={3650} />);
+  view.rerender(<RaceLane rank={1} name="친구" count={3655} />);
   expect(screen.getByRole("img", { name: /달려/ })).toBeTruthy();
   act(() => vi.advanceTimersByTime(800));
   expect(screen.getByRole("img", { name: "지하철을 타고 있어요" })).toBeTruthy();

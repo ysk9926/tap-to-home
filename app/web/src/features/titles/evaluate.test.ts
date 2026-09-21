@@ -22,28 +22,28 @@ describe("evaluateTitles", () => {
     expect(evaluateTitles({ taps: morning, total: 10, firstTapAt: morning[0].tappedAt })).not.toContain("post_lunch_slump");
   });
 
-  it("last_hour_sprinter: 3000+ taps at 17:00 or later", () => {
-    const taps = [at("17:05", 3000)];
-    expect(evaluateTitles({ taps, total: 3000, firstTapAt: taps[0].tappedAt })).toContain("last_hour_sprinter");
-    const under = [at("17:05", 2999)];
-    expect(evaluateTitles({ taps: under, total: 2999, firstTapAt: under[0].tappedAt })).not.toContain("last_hour_sprinter");
+  it("last_hour_sprinter: 1500+ taps at 17:00 or later", () => {
+    const taps = [at("17:05", 1500)];
+    expect(evaluateTitles({ taps, total: 1500, firstTapAt: taps[0].tappedAt })).toContain("last_hour_sprinter");
+    const under = [at("17:05", 1499)];
+    expect(evaluateTitles({ taps: under, total: 1499, firstTapAt: under[0].tappedAt })).not.toContain("last_hour_sprinter");
   });
 
-  it("heart_already_home when the race reaches home (10000), bearable_day under 1000 (but not 0)", () => {
-    const big = [at("12:00", 10000)];
-    expect(evaluateTitles({ taps: big, total: 10000, firstTapAt: big[0].tappedAt })).toContain("heart_already_home");
-    const almost = [at("12:00", 9999)];
-    expect(evaluateTitles({ taps: almost, total: 9999, firstTapAt: almost[0].tappedAt })).not.toContain("heart_already_home");
-    const small = [at("12:00", 999)];
-    expect(evaluateTitles({ taps: small, total: 999, firstTapAt: small[0].tappedAt })).toContain("bearable_day");
-    const notSmall = [at("12:00", 1000)];
-    expect(evaluateTitles({ taps: notSmall, total: 1000, firstTapAt: notSmall[0].tappedAt })).not.toContain("bearable_day");
+  it("heart_already_home when the race reaches home (5000), bearable_day under 500 (but not 0)", () => {
+    const big = [at("12:00", 5000)];
+    expect(evaluateTitles({ taps: big, total: 5000, firstTapAt: big[0].tappedAt })).toContain("heart_already_home");
+    const almost = [at("12:00", 4999)];
+    expect(evaluateTitles({ taps: almost, total: 4999, firstTapAt: almost[0].tappedAt })).not.toContain("heart_already_home");
+    const small = [at("12:00", 499)];
+    expect(evaluateTitles({ taps: small, total: 499, firstTapAt: small[0].tappedAt })).toContain("bearable_day");
+    const notSmall = [at("12:00", 500)];
+    expect(evaluateTitles({ taps: notSmall, total: 500, firstTapAt: notSmall[0].tappedAt })).not.toContain("bearable_day");
     expect(evaluateTitles({ taps: [], total: 0, firstTapAt: null })).toEqual([]);
   });
 
   it("awards every matching title", () => {
-    const taps = [at("09:00", 1), at("17:30", 9999)];
-    const ids = evaluateTitles({ taps, total: 10000, firstTapAt: taps[0].tappedAt });
+    const taps = [at("09:00", 1), at("17:30", 4999)];
+    const ids = evaluateTitles({ taps, total: 5000, firstTapAt: taps[0].tappedAt });
     expect(ids).toEqual(expect.arrayContaining(["early_leaver", "post_lunch_slump", "last_hour_sprinter", "heart_already_home"]));
     expect(ids).not.toContain("bearable_day");
   });

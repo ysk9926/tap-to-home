@@ -16,7 +16,7 @@ beforeAll(async () => {
   [me, friend] = await Promise.all([createTestUser("settle"), createTestUser("sf")]);
   await prisma.friendship.create({ data: { requesterId: me.id, addresseeId: friend.id, status: "accepted" } });
   await recordTaps(me.id, 1, MORNING);
-  await recordTaps(me.id, 9999, EVENING);
+  await recordTaps(me.id, 4999, EVENING);
   // Historical runs above today's cap are retained and still participate in rankings.
   await prisma.dailyRun.create({
     data: {
@@ -52,7 +52,7 @@ describe("settleToday", () => {
 
   it("today summary and collection reflect the settlement", async () => {
     const summary = await getTodaySummary({ id: me.id, name: me.name, username: me.username }, EVENING);
-    expect(summary).toMatchObject({ total: 10000, rank: 2, rankTotal: 2, peakHour: 17 });
+    expect(summary).toMatchObject({ total: 5000, rank: 2, rankTotal: 2, peakHour: 17 });
     expect(summary.firstTapAt).toBe("09:00");
     expect(summary.result?.primaryTitleId).toBe("heart_already_home");
 
