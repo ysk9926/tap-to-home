@@ -11,6 +11,18 @@ void main() {
     WebViewPlatform.instance = platform;
   });
 
+  testWidgets('웹을 불러오는 동안 퇴근 레이스 스플래시를 표시한다', (tester) async {
+    await tester.pumpWidget(const TapToHomeApp());
+
+    expect(find.bySemanticsLabel('회사를 나와 집으로 달리는 졸라맨'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    platform.navigationDelegate.onPageFinished?.call('https://taptohome.site');
+    await tester.pump();
+
+    expect(find.bySemanticsLabel('회사를 나와 집으로 달리는 졸라맨'), findsNothing);
+  });
+
   testWidgets('메인 문서 로드 실패 시 다시 시도 화면을 표시한다', (tester) async {
     await tester.pumpWidget(const TapToHomeApp());
     platform.navigationDelegate.onPageStarted?.call('https://taptohome.site');
@@ -42,7 +54,10 @@ void main() {
     await tester.pump();
 
     expect(platform.controller.javaScriptCalls, hasLength(1));
-    expect(platform.controller.javaScriptCalls.single, contains('tap-to-home:resume'));
+    expect(
+      platform.controller.javaScriptCalls.single,
+      contains('tap-to-home:resume'),
+    );
   });
 
   testWidgets('메인 문서가 15초 동안 끝나지 않으면 재시도 화면을 표시한다', (tester) async {
@@ -163,9 +178,7 @@ class FakeNavigationDelegate extends PlatformNavigationDelegate {
   }
 
   @override
-  Future<void> setOnWebResourceError(
-    WebResourceErrorCallback callback,
-  ) async {
+  Future<void> setOnWebResourceError(WebResourceErrorCallback callback) async {
     onWebResourceError = callback;
   }
 

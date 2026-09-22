@@ -232,9 +232,15 @@ class _WebShellState extends State<WebShell> {
           children: [
             WebViewWidget(controller: _controller),
             if (_status == _WebShellStatus.loading)
-              const ColoredBox(
-                color: Color(0xFFFFFDF5),
-                child: Center(child: CircularProgressIndicator()),
+              ColoredBox(
+                color: const Color(0xFFFFFDF5),
+                child: Image.asset(
+                  'assets/images/splash.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  semanticLabel: '회사를 나와 집으로 달리는 졸라맨',
+                ),
               ),
             if (_status == _WebShellStatus.failed)
               ColoredBox(
