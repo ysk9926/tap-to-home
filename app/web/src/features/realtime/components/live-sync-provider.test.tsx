@@ -170,6 +170,26 @@ it("still fetches full snapshots on resume when a race event arrives during coal
   expect(count("/api/signals/unread")).toBe(1);
 });
 
+it("coalesces duplicate native resumes into one reconciliation and realtime restart", async () => {
+  render(<App />); await connect(); requests = [];
+
+  await act(async () => {
+    window.dispatchEvent(new CustomEvent("tap-to-home:resume", {
+      detail: { source: "native", backgroundedForMs: 60_000 },
+    }));
+    window.dispatchEvent(new CustomEvent("tap-to-home:resume", {
+      detail: { source: "native", backgroundedForMs: 60_001 },
+    }));
+  });
+  await tick(200);
+
+  expect(count("/api/race/today")).toBe(1);
+  expect(count("/api/friends")).toBe(1);
+  expect(count("/api/signals/unread")).toBe(1);
+  expect(sdk.joins.get("u:me")).toBe(2);
+  expect(sdk.joins.get("u:friend")).toBe(2);
+});
+
 it("disposes pending signal receipts when the session ends before provider unmount", async () => {
   render(<App />); await connect(); requests = [];
   await act(async () => {
@@ -301,6 +321,18 @@ it("ends the session on unauthorized queries without retrying", async () => {
   await tick(60_000);
   expect(requests).toHaveLength(before);
   expect(sdk.channels.size).toBe(0);
+});
+
+it("ends the session when a mutation reports an expired session", async () => {
+  render(<App />); await connect();
+
+  await act(async () => window.dispatchEvent(new Event("tap-to-home:session-expired")));
+  await tick(200);
+
+  expect(navigation.replace).toHaveBeenCalledWith("/login");
+  expect(sdk.channels.size).toBe(0);
+  expect(client.getQueryData(raceTodayKey("me"))).toBeUndefined();
+  expect(client.getQueryData(friendsKey("me"))).toBeUndefined();
 });
 
 it("clears user caches and completes session exit even if channel removal fails", async () => {

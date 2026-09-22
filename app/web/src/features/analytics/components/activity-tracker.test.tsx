@@ -25,6 +25,17 @@ afterEach(() => {
 });
 
 describe("ActivityTracker", () => {
+  it("reports an expired session from the activity mutation", async () => {
+    const expired = vi.fn();
+    window.addEventListener("tap-to-home:session-expired", expired, { once: true });
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 401 }));
+
+    render(<ActivityTracker userId="one" />);
+    await act(async () => {});
+
+    expect(expired).toHaveBeenCalledOnce();
+  });
+
   it("collects on mount and throttles visible resumes to five minutes", async () => {
     render(<ActivityTracker userId="one" />);
     await act(async () => {});

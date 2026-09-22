@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, fetchJson } from "@/lib/fetch-json";
+import { ApiError, fetchJson, fetchWithTimeout } from "@/lib/fetch-json";
+import { notifySessionExpiredForStatus } from "@/lib/auth/session-events";
 import { signalsUnreadKey } from "@/features/realtime/query-keys";
 import { isAppVisible } from "@/features/realtime/browser-activity";
 import { retrySyncQuery, type QueryPolicy } from "@/features/realtime/sync-policy";
@@ -36,12 +37,13 @@ export function useSignalToasts({ userId, active, visible, policy }: {
         timers.add(timer);
       },
       acknowledge: async (ids) => {
-        const response = await fetch("/api/signals/read", {
+        const response = await fetchWithTimeout("/api/signals/read", {
           method: "POST",
           credentials: "same-origin",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ ids }),
         });
+        notifySessionExpiredForStatus(response.status);
         if (!response.ok) throw new ApiError(response.status, "신호 수신 확인에 실패했어요");
       },
     });

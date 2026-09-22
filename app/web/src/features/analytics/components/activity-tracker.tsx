@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { notifySessionExpiredForStatus } from "@/lib/auth/session-events";
+import { fetchWithTimeout } from "@/lib/fetch-json";
 
 const UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 const RETRY_INTERVAL_MS = 30 * 1000;
@@ -57,11 +59,12 @@ export function ActivityTracker({ userId }: { userId: string }) {
       const requestController = new AbortController();
       controller = requestController;
       try {
-        const response = await fetch("/api/activity", {
+        const response = await fetchWithTimeout("/api/activity", {
           method: "POST",
           credentials: "same-origin",
           signal: requestController.signal,
         });
+        notifySessionExpiredForStatus(response.status);
         if (!response.ok) throw new Error(`activity collection failed: ${response.status}`);
         controller = undefined;
         schedule();

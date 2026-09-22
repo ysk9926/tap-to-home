@@ -124,11 +124,11 @@ Capabilities 목록에 Push Notifications 가 안 보이면 `+ Capability` 로 �
 
 ```
 cd app/mobile
-flutter build ipa --dart-define=WEB_URL=https://tap-to-home-web.vercel.app
-flutter build apk --dart-define=WEB_URL=https://tap-to-home-web.vercel.app
+flutter build ipa --dart-define=WEB_URL=https://taptohome.site
+flutter build apk --dart-define=WEB_URL=https://taptohome.site
 ```
 
-`WEB_URL` 을 빠뜨리면 기본값 `http://localhost:3000` 이 박혀 빈 화면이 뜬다.
+`WEB_URL` 을 생략하면 운영 주소 `https://taptohome.site`를 사용한다. 로컬 웹을 띄울 때만 `--dart-define=WEB_URL=http://localhost:3000`을 명시한다.
 
 ---
 

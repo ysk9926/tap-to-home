@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { notifySessionExpiredForStatus } from "@/lib/auth/session-events";
+import { fetchWithTimeout } from "@/lib/fetch-json";
 import { isNativeShell, postToNative } from "../bridge";
 
 const PLATFORMS = new Set(["ios", "android"]);
@@ -8,11 +10,12 @@ const PLATFORMS = new Set(["ios", "android"]);
 async function uploadToken(token: string, platform: string): Promise<void> {
   if (!PLATFORMS.has(platform)) return;
   try {
-    await fetch("/api/push/tokens", {
+    const response = await fetchWithTimeout("/api/push/tokens", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ token, platform }),
     });
+    notifySessionExpiredForStatus(response.status);
   } catch {
     // 앱은 실행할 때마다 토큰을 올린다. 한 번 실패해도 다음 실행에서 복구된다
   }

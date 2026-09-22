@@ -11,8 +11,13 @@ import 'push.dart';
 /// 예) flutter run --dart-define=WEB_URL=http://localhost:3000
 const String kWebUrl = String.fromEnvironment(
   'WEB_URL',
-  defaultValue: 'http://localhost:3000',
+  defaultValue: 'https://taptohome.site',
 );
+const Duration _webLoadTimeout = Duration(seconds: 15);
+const Duration _resumeSignalTimeout = Duration(seconds: 2);
+const String _nativeResumeEvent = 'tap-to-home:resume';
+
+enum _WebShellStatus { loading, ready, failed }
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,21 +49,25 @@ class WebShell extends StatefulWidget {
 class _WebShellState extends State<WebShell> {
   late final WebViewController _controller;
   late final PushBridge _push;
-  bool _loading = true;
+  late final AppLifecycleListener _lifecycleListener;
+  _WebShellStatus _status = _WebShellStatus.loading;
+  Timer? _loadTimer;
+  DateTime? _backgroundedAt;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
+    _controller = WebViewController();
+    _push = PushBridge(_controller);
+    _controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFFFFFDF5))
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) => _push.onWebLoading(),
-          onPageFinished: (_) {
-            if (mounted) setState(() => _loading = false);
-            _push.onWebReady();
-          },
+          onPageStarted: _onPageStarted,
+          onPageFinished: _onPageFinished,
+          onWebResourceError: _onWebResourceError,
+          onHttpError: _onHttpError,
         ),
       )
       // 웹 → 네이티브 브릿지. 웹에서 window.TapToHome.postMessage(json) 으로 호출.
@@ -69,8 +78,116 @@ class _WebShellState extends State<WebShell> {
       )
       ..loadRequest(Uri.parse(kWebUrl));
 
-    _push = PushBridge(_controller);
+    _lifecycleListener = AppLifecycleListener(
+      onHide: _markBackgrounded,
+      onPause: _markBackgrounded,
+      onResume: _onResume,
+    );
+    _armLoadTimeout();
     unawaited(_push.initialize());
+  }
+
+  void _onPageStarted(String _) {
+    _push.onWebLoading();
+    _armLoadTimeout();
+    if (mounted) setState(() => _status = _WebShellStatus.loading);
+  }
+
+  void _onPageFinished(String _) {
+    if (_status == _WebShellStatus.failed) return;
+    _loadTimer?.cancel();
+    if (mounted) setState(() => _status = _WebShellStatus.ready);
+    _push.onWebReady();
+  }
+
+  void _onWebResourceError(WebResourceError error) {
+    if (error.isForMainFrame != true) return;
+    _showLoadFailure();
+  }
+
+  void _onHttpError(HttpResponseError error) {
+    final statusCode = error.response?.statusCode;
+    if (statusCode == null || statusCode < 500) return;
+    unawaited(_failIfCurrentDocument(error.request?.uri));
+  }
+
+  Future<void> _failIfCurrentDocument(Uri? requestUri) async {
+    if (requestUri == null) return;
+    final currentUrl = await _controller.currentUrl();
+    if (currentUrl == requestUri.toString()) _showLoadFailure();
+  }
+
+  void _armLoadTimeout() {
+    _loadTimer?.cancel();
+    _loadTimer = Timer(_webLoadTimeout, _showLoadFailure);
+  }
+
+  void _showLoadFailure() {
+    _loadTimer?.cancel();
+    _push.onWebLoading();
+    if (mounted) setState(() => _status = _WebShellStatus.failed);
+  }
+
+  void _markBackgrounded() {
+    _backgroundedAt ??= DateTime.now();
+  }
+
+  void _onResume() {
+    final backgroundedFor = _backgroundedAt == null
+        ? Duration.zero
+        : DateTime.now().difference(_backgroundedAt!);
+    _backgroundedAt = null;
+    unawaited(_wakeWebContent(backgroundedFor));
+  }
+
+  Future<void> _wakeWebContent(Duration backgroundedFor) async {
+    if (_status == _WebShellStatus.failed) {
+      await _reloadCurrentPage();
+      return;
+    }
+    if (_status != _WebShellStatus.ready) return;
+
+    final detail = jsonEncode({
+      'source': 'native',
+      'backgroundedForMs': backgroundedFor.inMilliseconds,
+    });
+    final eventName = jsonEncode(_nativeResumeEvent);
+    try {
+      await _controller
+          .runJavaScript(
+            'window.dispatchEvent(new CustomEvent($eventName, {detail: $detail}));',
+          )
+          .timeout(_resumeSignalTimeout);
+    } catch (_) {
+      await _reloadCurrentPage();
+    }
+  }
+
+  Future<void> _reloadCurrentPage() async {
+    if (mounted) setState(() => _status = _WebShellStatus.loading);
+    _push.onWebLoading();
+    _armLoadTimeout();
+    try {
+      final currentUrl = await _controller.currentUrl();
+      if (currentUrl == null) {
+        await _controller.loadRequest(Uri.parse(kWebUrl));
+      } else {
+        await _controller.reload();
+      }
+    } catch (_) {
+      _showLoadFailure();
+    }
+  }
+
+  void _retry() {
+    unawaited(_reloadCurrentPage());
+  }
+
+  @override
+  void dispose() {
+    _loadTimer?.cancel();
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   void _handleBridgeMessage(String raw) {
@@ -114,7 +231,59 @@ class _WebShellState extends State<WebShell> {
         child: Stack(
           children: [
             WebViewWidget(controller: _controller),
-            if (_loading) const Center(child: CircularProgressIndicator()),
+            if (_status == _WebShellStatus.loading)
+              const ColoredBox(
+                color: Color(0xFFFFFDF5),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (_status == _WebShellStatus.failed)
+              ColoredBox(
+                color: const Color(0xFFFFFDF5),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '페이지를 불러오지 못했어요',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF302B27),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          '인터넷 연결을 확인한 뒤 다시 시도해 주세요.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF6E625B),
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        OutlinedButton(
+                          onPressed: _retry,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF302B27),
+                            side: const BorderSide(
+                              color: Color(0xFF302B27),
+                              width: 1.5,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

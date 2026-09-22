@@ -133,7 +133,7 @@
 URL 입력란이 필수다. 페이지는 작성돼 있다(`app/web/src/app/privacy/page.tsx`). 배포 후 아래 URL 을 넣는다.
 
 ```
-https://tap-to-home-web.vercel.app/privacy
+https://taptohome.site/privacy
 ```
 
 `src/proxy.ts` 의 matcher 에 `/privacy` 가 없으므로 로그인 없이 열린다. 심사자가 못 열면 리젝이므로 배포 후 로그아웃 상태로 한 번 확인한다.
@@ -198,7 +198,7 @@ https://tap-to-home-web.vercel.app/privacy
 
 ```
 This app is a WebView shell for a web service.
-All features run at https://tap-to-home-web.vercel.app
+All features run at https://taptohome.site
 
 Test account:
   ID: reviewer
@@ -289,5 +289,5 @@ so the race screen shows two characters moving.
 [ ] xcodes install 26.3 (이 맥의 마지막 호환 버전)
 [ ] Xcode → Runner → Signing & Capabilities → Team 선택
 [ ] 앱 아이콘 1024 교체 (현재 Flutter 기본값 — 이대로면 리젝)
-[ ] flutter build ipa --dart-define=WEB_URL=https://tap-to-home-web.vercel.app
+[ ] flutter build ipa --dart-define=WEB_URL=https://taptohome.site
 ```

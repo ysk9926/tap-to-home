@@ -7,6 +7,7 @@ import { useFriends, type FriendsState } from "@/features/friends/hooks/use-frie
 import { useSignalToasts } from "@/features/signal/hooks/use-signal-toasts";
 import { SignalToastLayer } from "@/features/signal/components/signal-toast-layer";
 import { ApiError } from "@/lib/fetch-json";
+import { subscribeSessionExpired } from "@/lib/auth/session-events";
 import { useBrowserActivity } from "../browser-activity";
 import { applyRaceEvent } from "../cache-updates";
 import { LiveSyncContext } from "../live-sync-context";
@@ -15,6 +16,7 @@ import { createRealtimeSession } from "../session-controller";
 import { createSupabaseTransport, queueRealtimeLifecycle } from "../supabase-transport";
 import { getQueryPolicy } from "../sync-policy";
 import { useSyncReconciliation } from "../hooks/use-sync-reconciliation";
+import { subscribeNativeResume } from "../native-lifecycle";
 import type { SignalPayload } from "../channels";
 
 export { useLiveSync } from "../live-sync-context";
@@ -80,6 +82,23 @@ export function LiveSyncProvider({ userId, initialFriends, realtimeEnabled, chil
 
   useSyncReconciliation({ userId, active: !ended, ...health });
 
+  useEffect(() => {
+    if (!realtimeEnabled || ended) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = subscribeNativeResume(() => {
+      if (timer !== undefined) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        void queueRealtimeLifecycle(() => session.restart())
+          .catch((error: unknown) => console.warn("[realtime] resume restart failed", error));
+      }, 100);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [ended, realtimeEnabled, session]);
+
   const endSession = useCallback(async () => {
     setEnded(true);
     await queueRealtimeLifecycle(() => session.stop())
@@ -89,13 +108,22 @@ export function LiveSyncProvider({ userId, initialFriends, realtimeEnabled, chil
 
   useEffect(() => {
     let redirected = false;
-    return client.getQueryCache().subscribe((event) => {
+    const redirectToLogin = () => {
+      if (redirected) return;
+      redirected = true;
+      void endSession().then(() => { router.replace("/login"); router.refresh(); });
+    };
+    const unsubscribeExpired = subscribeSessionExpired(redirectToLogin);
+    const unsubscribeQueries = client.getQueryCache().subscribe((event) => {
       const error = event.query.state.error;
       if (redirected || !(error instanceof ApiError) || error.status !== 401) return;
       if (!userSyncKeys(userId).some((key) => JSON.stringify(key) === JSON.stringify(event.query.queryKey))) return;
-      redirected = true;
-      void endSession().then(() => { router.replace("/login"); router.refresh(); });
+      redirectToLogin();
     });
+    return () => {
+      unsubscribeExpired();
+      unsubscribeQueries();
+    };
   }, [client, userId, endSession, router]);
 
   return <LiveSyncContext.Provider value={{ userId, friends, ...health, ...activity, active: !ended, endSession }}>

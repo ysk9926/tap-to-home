@@ -12,6 +12,7 @@ export type SyncTransport = {
 };
 export type RealtimeSession = {
   start(): Promise<void>;
+  restart(): Promise<void>;
   stop(): Promise<void>;
   setFriendIds(ids: readonly string[]): Promise<void>;
   getSnapshot(): SyncSnapshot;
@@ -140,6 +141,24 @@ export const createRealtimeSession: CreateRealtimeSession = ({
     await removeRecords(records);
   };
 
+  const startCurrentChannels = async () => {
+    await retryPendingRemovals();
+    running = true;
+
+    try {
+      createOwnChannel();
+      for (const friendId of [...desiredFriendIds].sort()) createFriendChannel(friendId);
+      updateSnapshot();
+    } catch (error) {
+      try {
+        await stopCurrentChannels();
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Failed to start realtime session");
+      }
+      throw error;
+    }
+  };
+
   const enqueue = (operation: () => Promise<void> | void): Promise<void> => {
     const result = operationQueue.then(operation, operation);
     operationQueue = result.catch(() => undefined);
@@ -150,21 +169,13 @@ export const createRealtimeSession: CreateRealtimeSession = ({
     start() {
       return enqueue(async () => {
         if (running) return;
-        await retryPendingRemovals();
-        running = true;
-
-        try {
-          createOwnChannel();
-          for (const friendId of [...desiredFriendIds].sort()) createFriendChannel(friendId);
-          updateSnapshot();
-        } catch (error) {
-          try {
-            await stopCurrentChannels();
-          } catch (cleanupError) {
-            throw new AggregateError([error, cleanupError], "Failed to start realtime session");
-          }
-          throw error;
-        }
+        await startCurrentChannels();
+      });
+    },
+    restart() {
+      return enqueue(async () => {
+        if (running || ownChannel || friendChannels.size > 0) await stopCurrentChannels();
+        await startCurrentChannels();
       });
     },
     stop() {

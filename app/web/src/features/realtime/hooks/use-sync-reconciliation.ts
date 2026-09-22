@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { todayKst } from "@/lib/kst";
 import { isAppOnline, isAppVisible } from "../browser-activity";
+import { subscribeNativeResume } from "../native-lifecycle";
 import { userSyncKeys } from "../query-keys";
 import { createReconciler, type ReconcileReason } from "../reconciler";
 
@@ -59,6 +60,7 @@ export function useSyncReconciliation({ userId, active, ownConnected, raceConnec
     };
     document.addEventListener("visibilitychange", onResume);
     window.addEventListener("online", onOnline);
+    const unsubscribeNativeResume = subscribeNativeResume(onResume);
     armMidnight();
     return () => {
       request.current = null;
@@ -67,6 +69,7 @@ export function useSyncReconciliation({ userId, active, ownConnected, raceConnec
       reconciler.dispose();
       document.removeEventListener("visibilitychange", onResume);
       window.removeEventListener("online", onOnline);
+      unsubscribeNativeResume();
     };
   }, [active, client, userId]);
 

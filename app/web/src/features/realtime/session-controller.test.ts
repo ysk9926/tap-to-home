@@ -146,6 +146,31 @@ describe("createRealtimeSession", () => {
     expect(transport.get(userChannel("me")).subscribeCalls).toBe(1);
   });
 
+  it("restarts the own and desired friend channels after a native resume", async () => {
+    const { session, transport } = setup();
+    await session.setFriendIds(["friend-b", "friend-a"]);
+    await session.start();
+    transport.get("u:me").emitStatus("SUBSCRIBED");
+    transport.get("u:friend-a").emitStatus("SUBSCRIBED");
+    transport.get("u:friend-b").emitStatus("SUBSCRIBED");
+
+    await session.restart();
+
+    expect(transport.removeCalls.map((channel) => channel.topic).sort()).toEqual([
+      "u:friend-a",
+      "u:friend-b",
+      "u:me",
+    ]);
+    expect(transport.channelCalls).toEqual([
+      "u:me",
+      "u:friend-a",
+      "u:friend-b",
+      "u:me",
+      "u:friend-a",
+      "u:friend-b",
+    ]);
+  });
+
   it("registers all own-topic handlers before subscribing and routes current payloads", async () => {
     const { session, transport, onRace, onSignal, onFriend } = setup();
     const race = { userId: "me", date: "2026-09-20", tapCount: 12, stage: 2 };
