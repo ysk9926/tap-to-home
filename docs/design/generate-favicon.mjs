@@ -5,16 +5,19 @@ import { fileURLToPath } from "node:url";
 
 const webRequire = createRequire(new URL("../../app/web/package.json", import.meta.url));
 const sharp = createRequire(webRequire.resolve("next/package.json"))("sharp");
-const iconSource = fileURLToPath(new URL("./tap-to-home-icon-source.png", import.meta.url));
+// The larger drawing stays legible at favicon sizes. The padded version fits
+// Android's circular launcher mask without clipping the roof or walls.
+const iconSource = fileURLToPath(new URL("../../app/mobile/assets/icon/KakaoTalk_Photo_2026-09-27-16-26-51 003.png", import.meta.url));
+const androidIconSource = fileURLToPath(new URL("../../app/mobile/assets/icon/KakaoTalk_Photo_2026-09-27-16-26-51 002.png", import.meta.url));
 const splashSource = fileURLToPath(new URL("./tap-to-home-splash-source.png", import.meta.url));
 const webApp = new URL("../../app/web/src/app/", import.meta.url);
 const androidRes = new URL("../../app/mobile/android/app/src/main/res/", import.meta.url);
 const iosAssets = new URL("../../app/mobile/ios/Runner/Assets.xcassets/", import.meta.url);
 const mobileImages = new URL("../../app/mobile/assets/images/", import.meta.url);
 
-async function iconPng(size, { rgba = false } = {}) {
+async function iconPng(size, { rgba = false, source = iconSource } = {}) {
   // Next.js/Turbopack's ICO decoder requires RGBA PNG entries, including opaque icons.
-  let pipeline = sharp(iconSource).resize(size, size, { fit: "cover" });
+  let pipeline = sharp(source).resize(size, size, { fit: "cover" });
   if (rgba) pipeline = pipeline.ensureAlpha();
   return pipeline.png({ compressionLevel: 9 }).toBuffer();
 }
@@ -55,7 +58,33 @@ const androidIcons = [
   ["mipmap-xxxhdpi/ic_launcher.png", 192],
 ];
 for (const [path, size] of androidIcons) {
-  await writeFile(new URL(path, androidRes), await iconPng(size));
+  await writeFile(new URL(path, androidRes), await iconPng(size, { source: androidIconSource }));
+}
+
+// Android status bar icons use the image alpha as a single-color mask.
+// Convert the supplied white drawing to alpha and remove its black background.
+async function whiteMask(source, size) {
+  const { data, info } = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const mask = Buffer.alloc(info.width * info.height * 4);
+  for (let pixel = 0; pixel < info.width * info.height; pixel++) {
+    const index = pixel * 4;
+    const brightness = Math.max(data[index], data[index + 1], data[index + 2]);
+    mask[index] = mask[index + 1] = mask[index + 2] = 255;
+    mask[index + 3] = Math.round(brightness * data[index + 3] / 255);
+  }
+  return sharp(mask, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .resize(size, size).png({ compressionLevel: 9 }).toBuffer();
+}
+for (const [density, size] of [["mdpi", 24], ["hdpi", 36], ["xhdpi", 48], ["xxhdpi", 72], ["xxxhdpi", 96]]) {
+  const drawable = new URL(`drawable-${density}/`, androidRes);
+  await mkdir(drawable, { recursive: true });
+  await writeFile(new URL("ic_notification.png", drawable), await whiteMask(iconSource, size));
+}
+
+// Adaptive launcher icons and Android 13 themed icons share a safe-area mask.
+for (const [density, size] of [["mdpi", 108], ["hdpi", 162], ["xhdpi", 216], ["xxhdpi", 324], ["xxxhdpi", 432]]) {
+  const mipmap = new URL(`mipmap-${density}/`, androidRes);
+  await writeFile(new URL("ic_launcher_foreground.png", mipmap), await whiteMask(androidIconSource, size));
 }
 
 const iosIconSet = new URL("AppIcon.appiconset/", iosAssets);
@@ -110,4 +139,4 @@ for (const [name, width, height] of [
   await writeFile(new URL(name, iosLaunchSet), await splashPng(width, height));
 }
 
-console.log("Generated web, Android, and iOS icons plus native and Flutter splash images.");
+console.log("Generated web, Android, and iOS icons, Android notification icons, and splash images.");

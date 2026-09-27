@@ -4,10 +4,10 @@
 
 ## Outputs
 
-- Icon master: `tap-to-home-icon-source.png` (1254×1254).
+- Original icon master: `tap-to-home-icon-source.png` (1254×1254). Retained for history; the current icon sources are the user-provided PNGs in `app/mobile/assets/icon/`.
 - Splash master: `tap-to-home-splash-source.png` (1024×1536).
-- `generate-favicon.mjs` derives the web favicon and metadata icons, Android launcher icons, iOS AppIcon set, Android/iOS native splash images, and Flutter loading splash.
-- Run `node docs/design/generate-favicon.mjs` from the workspace root after either master changes. The script uses Next.js's installed Sharp dependency. Turbopack's ICO decoder requires RGBA PNG entries, including opaque artwork.
+- `generate-favicon.mjs` derives the web favicon and metadata icons, Android launcher and notification icons, iOS AppIcon set, Android/iOS native splash images, and Flutter loading splash.
+- Run `node docs/design/generate-favicon.mjs` from the workspace root after the current icon sources or splash master change. The script uses Next.js's installed Sharp dependency. Turbopack's ICO decoder requires RGBA PNG entries, including opaque artwork.
 
 ## Icon prompt
 

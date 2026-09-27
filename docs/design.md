@@ -94,13 +94,17 @@ Midjourney 생성 에셋은 쓰지 않는다. 졸라맨·아이콘·프레임 �
 
 ### 서비스 아이콘과 스플래시
 
-2026-09-22 사용자 요청으로 서비스 식별용 아이콘과 모바일 스플래시에는 생성한 래스터 이미지를 사용한다. 두 자산 모두 종이색 줄노트·검은 연필/매직 선·노란 형광펜색을 공통으로 쓴다. 아이콘은 집 안의 `Tap / To / Home`, 스플래시는 사무실에서 집으로 달리는 졸라맨을 표현한다. 게임 화면의 SVG 컴포넌트에는 영향을 주지 않는다.
+2026-09-22 사용자 요청으로 서비스 식별용 아이콘과 모바일 스플래시에 래스터 이미지를 도입했다. 스플래시는 사무실에서 집으로 달리는 졸라맨을 표현한다. 게임 화면의 SVG 컴포넌트에는 영향을 주지 않는다.
+
+2026-09-27 아이콘은 사용자가 제공한 `app/mobile/assets/icon/`의 검은 바탕·흰색 집 로고로 교체했다. 웹·iOS·알림에는 큰 로고(`...16-26-51 003.png`), Android 런처에는 원형 마스크에 맞는 여백 있는 로고(`...16-26-51 002.png`)를 쓴다. Android 알림 아이콘은 큰 로고의 검은 배경을 투명하게 바꾼 흰색 단색 이미지다. 스플래시 일러스트는 기존 소스를 유지한다.
 
 - `app/web/src/app/favicon.ico`: 16·32·48·64·128·256px를 포함하는 브라우저 파비콘.
 - `app/web/src/app/icon.png`: 512px 서비스 아이콘.
 - `app/web/src/app/apple-icon.png`: 180px iOS 홈 화면 아이콘.
 - `app/mobile/android/app/src/main/res/mipmap-*/ic_launcher.png`: Android 런처 아이콘.
+- `app/mobile/android/app/src/main/res/mipmap-*/ic_launcher_foreground.png`: Android 적응형·테마 런처 아이콘의 전경.
+- `app/mobile/android/app/src/main/res/drawable-*/ic_notification.png`: Android 푸시 알림의 단색 아이콘.
 - `app/mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/`: iOS 런처 아이콘 세트.
 - `app/mobile/assets/images/splash.png`: 웹뷰를 불러오는 동안 표시하는 Flutter 스플래시.
 - Android `launch_background.xml`과 iOS `LaunchScreen.storyboard`도 같은 스플래시 파생 이미지를 사용한다. Android 12 이상 시스템 스플래시는 플랫폼 제약에 맞춰 앱 아이콘을 먼저 보여주고 Flutter 스플래시로 이어진다.
-- 생성 원본·프롬프트·파생 스크립트는 `docs/design/`에 보관한다. `node docs/design/generate-favicon.mjs`로 모든 크기를 다시 만든다.
+- 이전 생성 원본·프롬프트와 파생 스크립트는 `docs/design/`에 보관한다. 현재 아이콘 원본은 `app/mobile/assets/icon/`에 있다. `node docs/design/generate-favicon.mjs`로 모든 크기를 다시 만든다.
