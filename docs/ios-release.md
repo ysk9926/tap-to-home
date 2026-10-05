@@ -1,6 +1,47 @@
 # iOS 출시 — 애플 웹 콘솔 작업
 
-브라우저에서 해야 하는 것만 순서대로. 로컬 Xcode 빌드는 이 문서 범위 밖이다.
+Apple 웹 콘솔 작업과 앱 심사 재제출 절차를 정리한다.
+
+## 2026-10-04 심사 거절 — 앱 이름 불일치 (2.3.8)
+
+심사 대상은 버전 `1.0 (2)`였다. App Store 이름은 `TAP TO HOME`, 기기 표시 이름은 `퇴근 레이스`여서 같은 앱인지 찾기 어렵다는 지적을 받았다.
+
+- App Store 이름은 `TAP TO HOME`으로 유지한다.
+- `ios/Runner/Info.plist`의 `CFBundleDisplayName`과 대체 이름인 `CFBundleName`을 모두 `TAP TO HOME`으로 맞춘다.
+- 번들 ID `com.taptohome.app`은 유지한다.
+- `pubspec.yaml`의 빌드 번호를 `2`에서 `3`으로 올린다. 기기 이름은 앱 바이너리에 포함되므로 새 빌드를 업로드해야 한다.
+
+### 재제출
+
+Xcode와 배포 서명이 설정된 Mac에서 `app/mobile` 디렉터리로 이동해 빌드한다. 현재 App Store Connect 심사 버전은 `1.0`이므로 `pubspec.yaml`의 `1.0.2` 대신 `--build-name=1.0`을 지정한다. 빌드 번호 `3`을 이미 업로드했다면 더 큰 번호를 사용한다.
+
+```sh
+flutter build ipa --release \
+  --build-name=1.0 \
+  --build-number=3 \
+  --dart-define=WEB_URL=https://taptohome.site
+```
+
+1. 생성된 아카이브의 `build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app/Info.plist`에서 `CFBundleDisplayName = TAP TO HOME`, `CFBundleName = TAP TO HOME`, `CFBundleIdentifier = com.taptohome.app`, `CFBundleShortVersionString = 1.0`, `CFBundleVersion = 3`을 확인한다.
+2. 새 빌드를 업로드하고 TestFlight에서 설치해 홈 화면 이름을 확인한다.
+3. App Store Connect의 앱 정보에서 각 언어의 이름이 기기 표시 이름과 충분히 유사한지 확인한다.
+4. 버전 `1.0`의 빌드를 새 빌드로 교체하고, 아래 답변을 남긴 뒤 다시 심사에 제출한다.
+
+### 심사 답변 초안
+
+새 빌드를 실제로 업로드하고 선택한 뒤 사용한다.
+
+```text
+Hello App Review Team,
+
+We have changed the app name displayed on the device from “퇴근 레이스” to “TAP TO HOME” to match the App Store name.
+The Bundle Identifier remains unchanged: com.taptohome.app.
+We have uploaded and selected a new build with this correction for review.
+
+Thank you.
+```
+
+공식 근거 (2026-10-05 확인): [App Review Guidelines 2.3.8](https://developer.apple.com/app-store/review/guidelines/#accurate-metadata), [CFBundleDisplayName / CFBundleName](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html), [심사 메시지에 답변하기](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/reply-to-app-review-messages/).
 
 ## 빌드 환경 제약 (2026-09-19 확인)
 
@@ -17,8 +58,8 @@
 | 항목 | 값 |
 | --- | --- |
 | 번들 ID | `com.taptohome.app` (`project.pbxproj` 6곳 반영) |
-| 표시 이름 | `퇴근 레이스` (`CFBundleDisplayName`) |
-| 버전 | `1.0.0+1` (`pubspec.yaml`) |
+| 표시 이름 | `TAP TO HOME` (`CFBundleDisplayName`, `CFBundleName`; 2026-10-05 수정) |
+| 버전 | `1.0.2+3` (`pubspec.yaml`; 심사 버전 `1.0`은 위 재제출 명령으로 지정) |
 | 암호화 면제 | `ITSAppUsesNonExemptEncryption = false` |
 | 화면 방향 | 세로 고정 (iPad 는 세로 양방향) |
 | 개인정보 처리방침 | `app/web/src/app/privacy/page.tsx` → `/privacy` |
@@ -40,7 +81,7 @@
 
 번들 ID(Bundle Identifier)는 애플 생태계에서 이 앱을 가리키는 영구 주소다. **App Store 에 한 번 올리면 절대 못 바꾼다.** 앱 이름은 나중에 바꿔도 되지만 이건 안 된다.
 
-현재 프로젝트 값은 Flutter 자동 생성값 `com.taptohome.tapToHomeMobile` 이다. 대문자 카멜케이스가 섞여 관례에 어긋나므로 `com.taptohome.app` 정도로 정하고 등록하는 것을 권한다. 형식은 역순 도메인이고, 해당 도메인을 실제로 소유할 필요는 없다. 소문자·숫자·하이픈·점만 쓴다.
+현재 프로젝트 번들 ID는 `com.taptohome.app`이다. 이미 제출한 앱의 Identifier를 재사용하며, 이름 불일치 수정이나 재제출을 위해 번들 ID를 바꾸지 않는다.
 
 **경로**: Certificates, Identifiers & Profiles → **Identifiers** → `+`
 
@@ -282,8 +323,8 @@ so the race screen shows two characters moving.
 
 ```
 [x] 번들 ID com.taptohome.app 로 변경
-[x] CFBundleDisplayName 퇴근 레이스
-[x] pubspec version 1.0.0+1
+[x] CFBundleDisplayName / CFBundleName TAP TO HOME
+[x] pubspec version 1.0.2+3 (재제출 시 --build-name=1.0)
 [x] ITSAppUsesNonExemptEncryption false
 [x] 화면 세로 고정
 [ ] xcodes install 26.3 (이 맥의 마지막 호환 버전)
