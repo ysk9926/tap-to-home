@@ -19,6 +19,7 @@
     "db:deploy": "pnpm --filter web db:deploy",
     "db:studio": "pnpm --filter web db:studio",
     "admin:master": "pnpm --filter web admin:master",
+    "mobile:build": "bash ./build.sh",
     "mobile:run": "cd app/mobile && flutter run"
   }
 }

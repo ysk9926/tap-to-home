@@ -34,6 +34,7 @@ pnpm dev                # web 개발 서버 (http://localhost:3000)
 pnpm typecheck && pnpm lint
 pnpm test               # vitest (통합 테스트는 pnpm db:up 필요)
 pnpm mobile:run         # flutter run (WEB_URL 은 --dart-define 로 주입)
+pnpm mobile:build       # 대화형 모바일 빌드 및 버전 관리 (./build.sh)
 ```
 
 첫 실행: `cp app/web/.env.example app/web/.env` 후 `BETTER_AUTH_SECRET` 을 채운다.
